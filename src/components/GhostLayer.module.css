@@ -1,0 +1,51 @@
+.wrapper {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.ghost {
+  font-family: 'Lora', 'Georgia', serif;
+  font-size: 16px;
+  line-height: 1.85;
+  padding: 4px 10px;
+  margin: 3px -10px;
+  border-radius: 5px;
+  transition: color 0.2s ease, background 0.2s ease, max-height 0.35s ease, opacity 0.35s ease, padding 0.3s ease, margin 0.3s ease;
+  max-height: 120px;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* dim — barely visible, not yet relevant */
+.dim {
+  color: var(--ghost-dim-text);
+  background: transparent;
+}
+
+/* yellow — moderate overlap, getting there */
+.yellow {
+  color: var(--ghost-y-text);
+  background: var(--ghost-y-bg);
+}
+
+/* orange — strong overlap */
+.orange {
+  color: var(--ghost-o-text);
+  background: var(--ghost-o-bg);
+}
+
+/* green — user is clearly covering this sentence */
+.green {
+  color: var(--ghost-g-text);
+  background: var(--ghost-g-bg);
+}
+
+/* covered — animated out */
+.covered {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}

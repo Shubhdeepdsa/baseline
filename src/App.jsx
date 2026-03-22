@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './styles/theme.css'
 import Titlebar from './components/Titlebar'
 import Sidebar from './components/Sidebar'
@@ -14,9 +14,13 @@ export default function App() {
   const [activeProject, setActiveProject] = useState(null)
   const [showNewModal, setShowNewModal] = useState(false)
 
-  const theme = settings.theme || 'dark'
+  // We read the saved theme synchronously from a data attribute set by preload
+  const savedTheme = document.documentElement.getAttribute('data-theme') || 'dark'
+  const [theme, setTheme] = useState(savedTheme)
 
   async function handleThemeToggle(newTheme) {
+    setTheme(newTheme)
+    document.documentElement.setAttribute('data-theme', newTheme)
     await saveSetting('theme', newTheme)
   }
 
@@ -33,6 +37,17 @@ export default function App() {
   if (!activeProject && projects.length > 0) {
     setActiveProject(projects[0].id)
   }
+
+  useEffect(() => {
+    if (activeProject) {
+      const project = projects.find(p => p.id === activeProject)
+      if (project) {
+        document.title = `${project.name} — Baseline`
+      }
+    } else {
+      document.title = 'Baseline'
+    }
+  }, [activeProject, projects])
 
   return (
     <div className={`app-root ${theme}`} style={{ position: 'relative' }}>

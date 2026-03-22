@@ -1,7 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+// Set theme immediately to avoid flash — runs before React
+ipcRenderer.invoke('getSettings').then(settings => {
+  document.documentElement.setAttribute('data-theme', settings.theme || 'dark')
+})
+
 contextBridge.exposeInMainWorld('electron', {
   platform: process.platform,
+
+  // Debug
+  consoleError: (errStr) => ipcRenderer.invoke('consoleError', errStr),
 
   // Projects
   getProjects: () => ipcRenderer.invoke('getProjects'),

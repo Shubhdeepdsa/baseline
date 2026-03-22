@@ -2,6 +2,7 @@ import { useState } from 'react'
 import styles from './ProjectView.module.css'
 import BrainDumpEditor from './BrainDumpEditor'
 import AIVersionPanel from './AIVersionPanel'
+import WritingEditor from './WritingEditor'
 
 const TABS = [
   { id: 'braindump', label: 'Brain dump' },
@@ -38,14 +39,10 @@ export default function ProjectView({ projectId }) {
           />
         )}
         {activeTab === 'writing' && (
-          <div className={styles.placeholder}>
-            Writing Editor — coming in Phase 4
-            {activeVersionContent && (
-              <p style={{ marginTop: 12, fontSize: 11, opacity: 0.5 }}>
-                Active version loaded ({activeVersionContent.length} chars)
-              </p>
-            )}
-          </div>
+          <WritingEditor
+            projectId={projectId}
+            activeVersionContent={activeVersionContent}
+          />
         )}
       </div>
     </div>

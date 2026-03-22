@@ -18,7 +18,10 @@ export default function Sidebar({ projects, activeProject, onSelectProject, onNe
   return (
     <div className={styles.sidebar}>
       <div className={styles.top}>
-        <div className={styles.logo}>baseline.</div>
+        <div className={styles.logo}>
+          <span className={styles.word}>baseline</span>
+          <span className={styles.cursor}>_</span>
+        </div>
         <button className={styles.newBtn} onClick={onNewProject}>
           <span className={styles.plus}>+</span>
           New project

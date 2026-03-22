@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -41,6 +41,12 @@ function getTimestamp() {
 }
 
 // ─── IPC HANDLERS ──────────────────────────────────────────────────────────
+
+ipcMain.handle('consoleError', (_, errStr) => {
+  console.error('\n====== ERROR FROM RENDERER ======')
+  console.error(errStr)
+  console.error('=================================\n')
+})
 
 // Get all projects — returns array of { id, name, modifiedAt }
 ipcMain.handle('getProjects', () => {
@@ -186,16 +192,35 @@ ipcMain.handle('saveSettings', (_, settings) => {
   return { success: true }
 })
 
-// Export file — saves to exports/ folder in the project
-ipcMain.handle('exportFile', (_, projectId, format, content) => {
-  const exportsDir = path.join(getProjectDir(projectId), 'exports')
-  ensureDir(exportsDir)
-
+// Export file — asks user where to save, then writes and shows
+ipcMain.handle('exportFile', async (_, projectId, format, content) => {
   const timestamp = getTimestamp()
-  const filename = `${projectId}_${timestamp}.${format}`
-  const filePath = path.join(exportsDir, filename)
+  const defaultFilename = `${projectId}_${timestamp}.${format}`
 
-  fs.writeFileSync(filePath, content, format === 'md' ? 'utf8' : undefined)
+  const filters = []
+  if (format === 'md') filters.push({ name: 'Markdown', extensions: ['md'] })
+  else if (format === 'pdf') filters.push({ name: 'PDF', extensions: ['pdf'] })
+  else if (format === 'docx') filters.push({ name: 'Word Document', extensions: ['docx'] })
+
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    title: `Export as ${format.toUpperCase()}`,
+    defaultPath: defaultFilename,
+    filters
+  })
+
+  if (canceled || !filePath) {
+    return { success: false, canceled: true }
+  }
+
+  if (format === 'md') {
+    fs.writeFileSync(filePath, content, 'utf8')
+  } else {
+    // For PDF and DOCX, content is a base64-encoded string
+    const buffer = Buffer.from(content, 'base64')
+    fs.writeFileSync(filePath, buffer)
+  }
+
+  shell.showItemInFolder(filePath)
   return { success: true, path: filePath }
 })
 
@@ -209,6 +234,7 @@ function createWindow() {
     minHeight: 600,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#0E0C0A',
+    icon: path.join(process.env.APP_ROOT, 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -234,4 +260,9 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow()
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(path.join(process.env.APP_ROOT, 'build', 'icon.png'))
+  }
+  createWindow()
+})

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import electron from 'vite-plugin-electron/simple'
 
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
     electron({
@@ -40,4 +41,12 @@ export default defineConfig({
     }),
   ],
   clearScreen: false,
+  optimizeDeps: {
+    exclude: ['@xenova/transformers'],
+  },
+  build: {
+    rollupOptions: {
+      external: ['@xenova/transformers'],
+    },
+  },
 })

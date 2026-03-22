@@ -1,0 +1,213 @@
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+
+.toolBtn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 13px;
+  padding: 4px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.toolBtn:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.toolBtnActive {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border2);
+  margin: 0 4px;
+}
+
+.exportGroup {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.exportLabel {
+  font-size: 11px;
+  color: var(--text3);
+  margin-right: 4px;
+}
+
+.exportBtn {
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--accent);
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.exportBtn:hover {
+  background: var(--accent-bg);
+}
+
+.editorWrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 36px 48px 24px;
+}
+
+/* TipTap editor styles */
+.editor {
+  outline: none;
+}
+
+.editorContent {
+  outline: none;
+  font-family: 'Lora', 'Georgia', serif;
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--text);
+  caret-color: var(--accent);
+  min-height: 200px;
+}
+
+.editorContent h1 {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 16px;
+  color: var(--text);
+  font-family: 'Lora', 'Georgia', serif;
+}
+
+.editorContent h2 {
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  color: var(--text);
+  font-family: 'Lora', 'Georgia', serif;
+}
+
+.editorContent p {
+  margin-bottom: 0;
+}
+
+.editorContent p + p {
+  margin-top: 8px;
+}
+
+.editorContent ul, .editorContent ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+
+.editorContent li {
+  margin: 4px 0;
+}
+
+.editorContent p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text3);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Ghost text area */
+.ghostWrap {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border2);
+}
+
+.ghostPlaceholder {
+  font-family: 'Lora', 'Georgia', serif;
+  font-size: 14px;
+  color: var(--text3);
+  font-style: italic;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 16px;
+  padding: 8px 48px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.legendBlock {
+  width: 28px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* Status bar */
+.statusBar {
+  height: 26px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.statusItem {
+  font-size: 10px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.statusDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--status-dot);
+}
+
+.badge {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 3px;
+  color: var(--accent);
+  font-size: 9px;
+  padding: 1px 5px;
+  letter-spacing: 0.05em;
+}
