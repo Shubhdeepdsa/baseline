@@ -1,0 +1,95 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 28px;
+  width: 360px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+
+.input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 8px;
+}
+
+.input:focus {
+  border-color: var(--accent-border);
+}
+
+.input::placeholder {
+  color: var(--text3);
+}
+
+.error {
+  font-size: 11px;
+  color: #E24B4A;
+  margin-bottom: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.cancelBtn {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 12px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cancelBtn:hover {
+  background: var(--bg3);
+}
+
+.createBtn {
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: var(--bg);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.createBtn:hover {
+  opacity: 0.9;
+}

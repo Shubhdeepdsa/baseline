@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ─── DARK MODE (default) ─────────────────────────────── */
+.dark {
+  --bg:            #0E0C0A;
+  --bg2:           #0A0908;
+  --bg3:           #141210;
+  --bg4:           #1A1612;
+  --border:        #1E1A16;
+  --border2:       #2A2520;
+  --text:          #E8E4DC;
+  --text2:         #6A6560;
+  --text3:         #3A3530;
+  --accent:        #C9A84C;
+  --accent-bg:     #C9A84C18;
+  --accent-border: #C9A84C44;
+  --ghost-dim-text:  #2A2520;
+  --ghost-y-bg:      #5C4A1E22;
+  --ghost-y-text:    #6A5A2E;
+  --ghost-o-bg:      #6B3D1A22;
+  --ghost-o-text:    #7A4D2A;
+  --ghost-g-bg:      #1E4A2E33;
+  --ghost-g-text:    #2A6A4E;
+  --logo-color:    #C9A84C;
+  --status-dot:    #2A6A4E;
+}
+
+/* ─── LIGHT MODE ──────────────────────────────────────── */
+.light {
+  --bg:            #F5F2EC;
+  --bg2:           #EFEBE3;
+  --bg3:           #E8E3DA;
+  --bg4:           #FFFFFF;
+  --border:        #DDD8CE;
+  --border2:       #CCC7BC;
+  --text:          #1A1814;
+  --text2:         #6A6560;
+  --text3:         #A8A39A;
+  --accent:        #8B6A1A;
+  --accent-bg:     #8B6A1A12;
+  --accent-border: #8B6A1A33;
+  --ghost-dim-text:  #C8C3BA;
+  --ghost-y-bg:      #F5E8C0;
+  --ghost-y-text:    #7A5A1A;
+  --ghost-o-bg:      #F5DCC0;
+  --ghost-o-text:    #7A3A1A;
+  --ghost-g-bg:      #C8E8D0;
+  --ghost-g-text:    #1A5A2E;
+  --logo-color:    #8B6A1A;
+  --status-dot:    #1A5A2E;
+}
+
+/* ─── TRANSITIONS ─────────────────────────────────────── */
+.app-root {
+  transition: background 0.2s ease, color 0.2s ease;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

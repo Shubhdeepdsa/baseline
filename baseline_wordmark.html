@@ -1,0 +1,96 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500&display=swap');
+.wrap{display:flex;flex-direction:column;align-items:center;gap:48px;padding:40px 24px}
+.dark-bg{background:#0E0C0A;border-radius:16px;padding:48px 64px;display:flex;flex-direction:column;align-items:center;gap:32px}
+.light-bg{background:#F5F2EC;border-radius:16px;padding:48px 64px;display:flex;flex-direction:column;align-items:center;gap:32px;border:1px solid #DDD8CE}
+.wordmark{font-family:'Lora','Georgia',serif;letter-spacing:0.04em;display:flex;align-items:baseline}
+.word{font-weight:400}
+.cursor{display:inline-block;animation:blink 1.1s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}45%,55%{opacity:0}}
+.size-lg .word{font-size:42px}
+.size-lg .cursor{font-size:42px;font-weight:300}
+.size-md .word{font-size:28px}
+.size-md .cursor{font-size:28px;font-weight:300}
+.size-sm .word{font-size:18px}
+.size-sm .cursor{font-size:18px;font-weight:300}
+.size-xs .word{font-size:13px;letter-spacing:0.06em}
+.size-xs .cursor{font-size:13px;font-weight:300}
+.label{font-family:-apple-system,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase}
+.icon-row{display:flex;gap:24px;align-items:center}
+.icon-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+.icon-label{font-family:-apple-system,sans-serif;font-size:10px;letter-spacing:0.08em}
+</style>
+
+<div class="wrap">
+
+  <div class="dark-bg">
+    <div class="label" style="color:#3A3530">Dark mode</div>
+
+    <div class="wordmark size-lg">
+      <span class="word" style="color:#E8E4DC">baseline</span>
+      <span class="cursor" style="color:#C9A84C">_</span>
+    </div>
+
+    <div class="wordmark size-md">
+      <span class="word" style="color:#E8E4DC">baseline</span>
+      <span class="cursor" style="color:#C9A84C">_</span>
+    </div>
+
+    <div class="wordmark size-sm">
+      <span class="word" style="color:#E8E4DC">baseline</span>
+      <span class="cursor" style="color:#C9A84C">_</span>
+    </div>
+
+    <div class="icon-row">
+      <div class="icon-wrap">
+        <div style="width:80px;height:80px;background:#1A1612;border-radius:18px;display:flex;align-items:center;justify-content:center;border:1px solid #2A2520">
+          <span style="font-family:'Lora','Georgia',serif;font-size:28px;color:#E8E4DC">b<span style="color:#C9A84C">_</span></span>
+        </div>
+        <span class="icon-label" style="color:#3A3530">App icon</span>
+      </div>
+      <div class="icon-wrap">
+        <div style="width:56px;height:56px;background:#1A1612;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid #2A2520">
+          <span style="font-family:'Lora','Georgia',serif;font-size:20px;color:#E8E4DC">b<span style="color:#C9A84C">_</span></span>
+        </div>
+        <span class="icon-label" style="color:#3A3530">Dock small</span>
+      </div>
+      <div class="icon-wrap">
+        <div style="width:32px;height:32px;background:#1A1612;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid #2A2520">
+          <span style="font-family:'Lora','Georgia',serif;font-size:12px;color:#E8E4DC">b<span style="color:#C9A84C">_</span></span>
+        </div>
+        <span class="icon-label" style="color:#3A3530">16px</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="light-bg">
+    <div class="label" style="color:#A8A39A">Light mode</div>
+
+    <div class="wordmark size-lg">
+      <span class="word" style="color:#1A1814">baseline</span>
+      <span class="cursor" style="color:#8B6A1A">_</span>
+    </div>
+
+    <div class="wordmark size-md">
+      <span class="word" style="color:#1A1814">baseline</span>
+      <span class="cursor" style="color:#8B6A1A">_</span>
+    </div>
+
+    <div class="icon-row">
+      <div class="icon-wrap">
+        <div style="width:80px;height:80px;background:#FFFFFF;border-radius:18px;display:flex;align-items:center;justify-content:center;border:1px solid #DDD8CE">
+          <span style="font-family:'Lora','Georgia',serif;font-size:28px;color:#1A1814">b<span style="color:#8B6A1A">_</span></span>
+        </div>
+        <span class="icon-label" style="color:#A8A39A">App icon</span>
+      </div>
+      <div class="icon-wrap">
+        <div style="width:56px;height:56px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid #DDD8CE">
+          <span style="font-family:'Lora','Georgia',serif;font-size:20px;color:#1A1814">b<span style="color:#8B6A1A">_</span></span>
+        </div>
+        <span class="icon-label" style="color:#A8A39A">Dock small</span>
+      </div>
+    </div>
+  </div>
+
+</div>
