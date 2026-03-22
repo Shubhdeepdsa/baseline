@@ -33,11 +33,30 @@ export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
   async function loadVersions() {
     const result = await window.electron.getVersions(projectId)
     setVersions(result)
-    // Always use the most recent version as active
+    
     if (result.length > 0) {
-      const latest = result[0]
-      setActiveVersion(latest.filename)
-      selectVersion(latest)
+      const activeResult = await window.electron.readFile(projectId, 'active-version')
+      const savedActiveFilename = activeResult.content?.trim()
+      
+      const savedVersionObj = result.find(v => v.filename === savedActiveFilename)
+      const versionObj = savedVersionObj || result[0]
+
+      setActiveVersion(versionObj.filename)
+      selectVersion(versionObj)
+      
+      if (!savedVersionObj) {
+        await window.electron.saveFile(projectId, 'active-version', versionObj.filename)
+      }
+      
+      if (onActiveVersionChange) {
+        const contentResult = await window.electron.readVersion(projectId, versionObj.filename)
+        onActiveVersionChange(contentResult.content || '')
+      }
+    } else {
+      setActiveVersion(null)
+      setSelectedVersion(null)
+      setSelectedContent('')
+      if (onActiveVersionChange) onActiveVersionChange('')
     }
   }
 
@@ -49,7 +68,8 @@ export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
 
   async function handleSaveVersion() {
     if (!pasteContent.trim()) return
-    await window.electron.saveVersion(projectId, pasteContent.trim())
+    const newVersion = await window.electron.saveVersion(projectId, pasteContent.trim())
+    await window.electron.saveFile(projectId, 'active-version', newVersion.filename)
     setPasteContent('')
     setShowPasteArea(false)
     await loadVersions()
@@ -57,6 +77,7 @@ export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
 
   async function handleSetActive(filename) {
     setActiveVersion(filename)
+    await window.electron.saveFile(projectId, 'active-version', filename)
     const result = await window.electron.readVersion(projectId, filename)
     if (onActiveVersionChange) {
       onActiveVersionChange(result.content || '')

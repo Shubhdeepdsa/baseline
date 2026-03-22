@@ -94,7 +94,7 @@ ipcMain.handle('createProject', (_, name) => {
 
 // Read brain-dump.md or writing.md — type is 'braindump' or 'writing'
 ipcMain.handle('readFile', (_, projectId, type) => {
-  const filename = type === 'braindump' ? 'brain-dump.md' : 'writing.md'
+  const filename = type === 'braindump' ? 'brain-dump.md' : type === 'writing' ? 'writing.md' : 'active-version.txt'
   const filePath = path.join(getProjectDir(projectId), filename)
   try {
     return { content: fs.readFileSync(filePath, 'utf8') }
@@ -105,7 +105,7 @@ ipcMain.handle('readFile', (_, projectId, type) => {
 
 // Save brain-dump.md or writing.md
 ipcMain.handle('saveFile', (_, projectId, type, content) => {
-  const filename = type === 'braindump' ? 'brain-dump.md' : 'writing.md'
+  const filename = type === 'braindump' ? 'brain-dump.md' : type === 'writing' ? 'writing.md' : 'active-version.txt'
   const filePath = path.join(getProjectDir(projectId), filename)
   try {
     fs.writeFileSync(filePath, content, 'utf8')
