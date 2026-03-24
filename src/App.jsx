@@ -10,7 +10,7 @@ import styles from './App.module.css'
 
 export default function App() {
   const { settings, saveSetting } = useSettings()
-  const { projects, createProject, reload } = useProjects()
+  const { projects, createProject, deleteProject, reload } = useProjects()
   const [activeProject, setActiveProject] = useState(null)
   const [showNewModal, setShowNewModal] = useState(false)
 
@@ -31,6 +31,22 @@ export default function App() {
       setShowNewModal(false)
     }
     return result
+  }
+
+  async function handleDeleteProject(projectId) {
+    const project = projects.find(p => p.id === projectId)
+    const confirmed = window.confirm(`Are you sure you want to delete "${project?.name || projectId}"? This cannot be undone.`)
+    
+    if (confirmed) {
+      const result = await deleteProject(projectId)
+      if (!result.error) {
+        if (activeProject === projectId) {
+          setActiveProject(null)
+        }
+      } else {
+        alert(`Error deleting project: ${result.error}`)
+      }
+    }
   }
 
   // Restore last active project from settings
@@ -72,6 +88,7 @@ export default function App() {
           activeProject={activeProject}
           onSelectProject={handleSelectProject}
           onNewProject={() => setShowNewModal(true)}
+          onDeleteProject={handleDeleteProject}
         />
         {activeProject
           ? <ProjectView key={activeProject} projectId={activeProject} />

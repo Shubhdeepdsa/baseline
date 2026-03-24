@@ -90,18 +90,70 @@ ipcMain.handle('createProject', (_, name) => {
 
   ensureDir(projectDir)
   ensureDir(path.join(projectDir, 'ai-versions'))
+  ensureDir(path.join(projectDir, 'brain-dumps'))
   ensureDir(path.join(projectDir, 'exports'))
 
-  fs.writeFileSync(path.join(projectDir, 'brain-dump.md'), '', 'utf8')
+  fs.writeFileSync(path.join(projectDir, 'brain-dumps', 'main.md'), '', 'utf8')
   fs.writeFileSync(path.join(projectDir, 'writing.md'), '', 'utf8')
 
   return { id, name }
 })
 
-// Read brain-dump.md or writing.md — type is 'braindump' or 'writing'
-ipcMain.handle('readFile', (_, projectId, type) => {
-  const filename = type === 'braindump' ? 'brain-dump.md' : type === 'writing' ? 'writing.md' : 'active-version.txt'
-  const filePath = path.join(getProjectDir(projectId), filename)
+// Delete a project folder
+ipcMain.handle('deleteProject', (_, projectId) => {
+  const projectDir = getProjectDir(projectId)
+  try {
+    if (fs.existsSync(projectDir)) {
+      fs.rmSync(projectDir, { recursive: true, force: true })
+    }
+    
+    // Clear lastProjectId if it was the deleted one
+    if (store.get('lastProjectId') === projectId) {
+      store.delete('lastProjectId')
+    }
+    
+    return { success: true }
+  } catch (err) {
+    return { error: err.message }
+  }
+})
+
+// Read brain-dump.md or writing.md — type is 'braindump' or 'writing' or 'active-braindump'
+ipcMain.handle('readFile', (_, projectId, type, filename = 'main.md') => {
+  const projectDir = getProjectDir(projectId)
+  let filePath
+  
+  if (type === 'braindump') {
+    const dumpsDir = path.join(projectDir, 'brain-dumps')
+    ensureDir(dumpsDir)
+    
+    // Migration: if brain-dump.md exists in root, move it to brain-dumps/main.md
+    const legacyPath = path.join(projectDir, 'brain-dump.md')
+    const newMainPath = path.join(dumpsDir, 'main.md')
+    if (fs.existsSync(legacyPath) && !fs.existsSync(newMainPath)) {
+      try {
+        fs.renameSync(legacyPath, newMainPath)
+      } catch (err) {
+        console.error('Migration failed:', err)
+      }
+    } else if (fs.existsSync(legacyPath) && fs.existsSync(newMainPath)) {
+      // If both exist, keep legacy as backup just in case? Or just delete?
+      // Let's just rename it to main_legacy.md if it doesn't exist
+      const legacyBackup = path.join(dumpsDir, 'main_legacy.md')
+      if (!fs.existsSync(legacyBackup)) {
+        fs.renameSync(legacyPath, legacyBackup)
+      }
+    }
+    
+    filePath = path.join(dumpsDir, filename)
+  } else if (type === 'writing') {
+    filePath = path.join(projectDir, 'writing.md')
+  } else if (type === 'active-braindump') {
+    filePath = path.join(projectDir, 'active-braindump.txt')
+  } else {
+    filePath = path.join(projectDir, 'active-version.txt')
+  }
+
   try {
     return { content: fs.readFileSync(filePath, 'utf8') }
   } catch {
@@ -110,9 +162,22 @@ ipcMain.handle('readFile', (_, projectId, type) => {
 })
 
 // Save brain-dump.md or writing.md
-ipcMain.handle('saveFile', (_, projectId, type, content) => {
-  const filename = type === 'braindump' ? 'brain-dump.md' : type === 'writing' ? 'writing.md' : 'active-version.txt'
-  const filePath = path.join(getProjectDir(projectId), filename)
+ipcMain.handle('saveFile', (_, projectId, type, content, filename = 'main.md') => {
+  const projectDir = getProjectDir(projectId)
+  let filePath
+  
+  if (type === 'braindump') {
+    const dumpsDir = path.join(projectDir, 'brain-dumps')
+    ensureDir(dumpsDir)
+    filePath = path.join(dumpsDir, filename)
+  } else if (type === 'writing') {
+    filePath = path.join(projectDir, 'writing.md')
+  } else if (type === 'active-braindump') {
+    filePath = path.join(projectDir, 'active-braindump.txt')
+  } else {
+    filePath = path.join(projectDir, 'active-version.txt')
+  }
+
   try {
     fs.writeFileSync(filePath, content, 'utf8')
     return { success: true }
@@ -169,6 +234,69 @@ ipcMain.handle('readVersion', (_, projectId, filename) => {
 // Delete a specific AI version file
 ipcMain.handle('deleteVersion', (_, projectId, filename) => {
   const filePath = path.join(getProjectDir(projectId), 'ai-versions', filename)
+  try {
+    fs.unlinkSync(filePath)
+    return { success: true }
+  } catch (err) {
+    return { error: err.message }
+  }
+})
+
+// --- BRAIN DUMPS ---
+
+ipcMain.handle('getBrainDumps', (_, projectId) => {
+  const dumpsDir = path.join(getProjectDir(projectId), 'brain-dumps')
+  ensureDir(dumpsDir)
+  
+  // Also check for migration in getBrainDumps just in case
+  const projectDir = getProjectDir(projectId)
+  const legacyPath = path.join(projectDir, 'brain-dump.md')
+  if (fs.existsSync(legacyPath)) {
+    const newMainPath = path.join(dumpsDir, 'main.md')
+    if (!fs.existsSync(newMainPath)) {
+      fs.renameSync(legacyPath, newMainPath)
+    } else {
+      const legacyBackup = path.join(dumpsDir, 'main_legacy.md')
+      if (!fs.existsSync(legacyBackup)) {
+        fs.renameSync(legacyPath, legacyBackup)
+      }
+    }
+  }
+
+  const files = fs.readdirSync(dumpsDir)
+    .filter(f => f.endsWith('.md'))
+    .sort((a, b) => {
+      if (a === 'main.md') return -1
+      if (b === 'main.md') return 1
+      return a.localeCompare(b)
+    })
+
+  return files.map(filename => ({
+    filename,
+    name: filename.replace('.md', '').replace(/-/g, ' '),
+  }))
+})
+
+ipcMain.handle('createBrainDump', (_, projectId, name) => {
+  const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  const filename = `${id}.md`
+  const dumpsDir = path.join(getProjectDir(projectId), 'brain-dumps')
+  ensureDir(dumpsDir)
+  
+  const filePath = path.join(dumpsDir, filename)
+  if (fs.existsSync(filePath)) {
+    return { error: 'A brain dump with this name already exists.' }
+  }
+
+  fs.writeFileSync(filePath, '', 'utf8')
+  return { filename, name }
+})
+
+ipcMain.handle('deleteBrainDump', (_, projectId, filename) => {
+  if (filename === 'main.md') {
+    return { error: 'Cannot delete the default brain dump.' }
+  }
+  const filePath = path.join(getProjectDir(projectId), 'brain-dumps', filename)
   try {
     fs.unlinkSync(filePath)
     return { success: true }

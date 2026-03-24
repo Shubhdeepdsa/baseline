@@ -19,9 +19,17 @@ export function useProjects() {
     return result
   }
 
+  async function deleteProject(projectId) {
+    const result = await window.electron.deleteProject(projectId)
+    if (!result.error) {
+      await loadProjects()
+    }
+    return result
+  }
+
   useEffect(() => {
     loadProjects()
   }, [])
 
-  return { projects, loading, createProject, reload: loadProjects }
+  return { projects, loading, createProject, deleteProject, reload: loadProjects }
 }

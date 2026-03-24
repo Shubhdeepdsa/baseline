@@ -14,7 +14,7 @@ function formatDate(isoString) {
   return `${Math.floor(diffDays / 7)}w ago`
 }
 
-export default function Sidebar({ projects, activeProject, onSelectProject, onNewProject }) {
+export default function Sidebar({ projects, activeProject, onSelectProject, onNewProject, onDeleteProject }) {
   return (
     <div className={styles.sidebar}>
       <div className={styles.top}>
@@ -42,7 +42,21 @@ export default function Sidebar({ projects, activeProject, onSelectProject, onNe
           >
             <span className={styles.projectDot} />
             <span className={styles.projectName}>{project.name}</span>
-            <span className={styles.projectDate}>{formatDate(project.modifiedAt)}</span>
+            <div className={styles.projectActions}>
+              <span className={styles.projectDate}>{formatDate(project.modifiedAt)}</span>
+              <button 
+                className={styles.deleteBtn}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDeleteProject(project.id)
+                }}
+                title="Delete project"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
           </div>
         ))}
       </div>
