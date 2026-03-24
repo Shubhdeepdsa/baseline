@@ -21,7 +21,7 @@ export function useEmbeddings() {
     // Dynamic import to avoid issues with Electron's context
     loadingPromise = import('@xenova/transformers/dist/transformers.min.js').then(async ({ pipeline, env }) => {
       env.allowLocalModels = false
-      env.useBrowserCache = false
+      env.useBrowserCache = true
 
       extractorInstance = await pipeline(
         'feature-extraction',

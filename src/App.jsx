@@ -27,15 +27,29 @@ export default function App() {
   async function handleCreateProject(name) {
     const result = await createProject(name)
     if (!result.error) {
-      setActiveProject(result.id)
+      handleSelectProject(result.id)
       setShowNewModal(false)
     }
     return result
   }
 
-  // Auto-select first project if none selected
-  if (!activeProject && projects.length > 0) {
-    setActiveProject(projects[0].id)
+  // Restore last active project from settings
+  useEffect(() => {
+    if (!activeProject && projects.length > 0) {
+      if (settings.lastProjectId) {
+        const exists = projects.find(p => p.id === settings.lastProjectId)
+        if (exists) {
+          setActiveProject(settings.lastProjectId)
+          return
+        }
+      }
+      setActiveProject(projects[0].id)
+    }
+  }, [settings.lastProjectId, projects, activeProject])
+
+  function handleSelectProject(projectId) {
+    setActiveProject(projectId)
+    saveSetting('lastProjectId', projectId)
   }
 
   useEffect(() => {
@@ -56,7 +70,7 @@ export default function App() {
         <Sidebar
           projects={projects}
           activeProject={activeProject}
-          onSelectProject={setActiveProject}
+          onSelectProject={handleSelectProject}
           onNewProject={() => setShowNewModal(true)}
         />
         {activeProject

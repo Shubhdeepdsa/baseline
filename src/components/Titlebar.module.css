@@ -4,10 +4,12 @@
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
+  justify-content: flex-end; /* Push the toggle to the right */
   padding: 0 16px;
   gap: 8px;
   -webkit-app-region: drag;
   flex-shrink: 0;
+  position: relative; /* Base for absolute positioning */
 }
 
 .dots {
@@ -27,8 +29,11 @@
   color: var(--text3);
   font-size: 12px;
   font-weight: 500;
-  margin: 0 auto;
   letter-spacing: 0.08em;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none; /* Let drag events pass through to the titlebar */
 }
 
 .toggle {

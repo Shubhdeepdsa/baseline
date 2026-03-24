@@ -182,6 +182,8 @@ ipcMain.handle('getSettings', () => {
   return {
     baseDir: store.get('baseDir', path.join(app.getPath('home'), 'Baseline', 'projects')),
     theme: store.get('theme', 'dark'),
+    lastProjectId: store.get('lastProjectId', null),
+    lastTabId: store.get('lastTabId', 'writing'),
   }
 })
 
@@ -189,6 +191,8 @@ ipcMain.handle('getSettings', () => {
 ipcMain.handle('saveSettings', (_, settings) => {
   if (settings.baseDir) store.set('baseDir', settings.baseDir)
   if (settings.theme) store.set('theme', settings.theme)
+  if (settings.lastProjectId !== undefined) store.set('lastProjectId', settings.lastProjectId)
+  if (settings.lastTabId) store.set('lastTabId', settings.lastTabId)
   return { success: true }
 })
 

@@ -218,11 +218,58 @@
 
 .right {
   flex: 1;
-  overflow-y: auto;
-  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.previewTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.copyBtn {
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 11px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.copyBtn:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.copyBtn.copied {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
 }
 
 .preview {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
   font-family: 'Lora', 'Georgia', serif;
   font-size: 14px;
   line-height: 1.8;
@@ -233,5 +280,5 @@
 .previewEmpty {
   font-size: 12px;
   color: var(--text3);
-  padding-top: 16px;
+  padding: 44px 32px;
 }

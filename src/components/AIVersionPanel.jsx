@@ -17,13 +17,13 @@ function formatDate(isoString) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
-export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
+export default function AIVersionPanel({ projectId, activeVersionFilename, onActiveVersionChange }) {
   const [versions, setVersions] = useState([])
-  const [activeVersion, setActiveVersion] = useState(null)
   const [selectedVersion, setSelectedVersion] = useState(null)
   const [selectedContent, setSelectedContent] = useState('')
   const [pasteContent, setPasteContent] = useState('')
   const [showPasteArea, setShowPasteArea] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!projectId) return
@@ -34,29 +34,10 @@ export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
     const result = await window.electron.getVersions(projectId)
     setVersions(result)
     
-    if (result.length > 0) {
-      const activeResult = await window.electron.readFile(projectId, 'active-version')
-      const savedActiveFilename = activeResult.content?.trim()
-      
-      const savedVersionObj = result.find(v => v.filename === savedActiveFilename)
-      const versionObj = savedVersionObj || result[0]
-
-      setActiveVersion(versionObj.filename)
-      selectVersion(versionObj)
-      
-      if (!savedVersionObj) {
-        await window.electron.saveFile(projectId, 'active-version', versionObj.filename)
-      }
-      
-      if (onActiveVersionChange) {
-        const contentResult = await window.electron.readVersion(projectId, versionObj.filename)
-        onActiveVersionChange(contentResult.content || '')
-      }
-    } else {
-      setActiveVersion(null)
-      setSelectedVersion(null)
-      setSelectedContent('')
-      if (onActiveVersionChange) onActiveVersionChange('')
+    // Default to selecting the active version if nothing is selected or if project changed
+    if (result.length > 0 && (!selectedVersion || !result.find(v => v.filename === selectedVersion))) {
+      const versionToSelect = result.find(v => v.filename === activeVersionFilename) || result[0]
+      selectVersion(versionToSelect)
     }
   }
 
@@ -72,15 +53,19 @@ export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
     await window.electron.saveFile(projectId, 'active-version', newVersion.filename)
     setPasteContent('')
     setShowPasteArea(false)
+    
+    // Update parent about the new active version
+    if (onActiveVersionChange) {
+      onActiveVersionChange(newVersion.filename)
+    }
+    
     await loadVersions()
   }
 
   async function handleSetActive(filename) {
-    setActiveVersion(filename)
     await window.electron.saveFile(projectId, 'active-version', filename)
-    const result = await window.electron.readVersion(projectId, filename)
     if (onActiveVersionChange) {
-      onActiveVersionChange(result.content || '')
+      onActiveVersionChange(filename)
     }
   }
 
@@ -88,6 +73,17 @@ export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
     e.stopPropagation()
     await window.electron.deleteVersion(projectId, filename)
     await loadVersions()
+  }
+
+  async function handleCopy() {
+    if (!selectedContent) return
+    try {
+      await navigator.clipboard.writeText(selectedContent)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
   }
 
   return (
@@ -136,15 +132,15 @@ export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
               onClick={() => selectVersion(version)}
             >
               <div className={styles.versionLeft}>
-                <span className={`${styles.badge} ${activeVersion === version.filename ? styles.activeBadge : styles.inactiveBadge}`}>
-                  v{version.versionNumber}{activeVersion === version.filename ? ' — active' : ''}
+                <span className={`${styles.badge} ${activeVersionFilename === version.filename ? styles.activeBadge : styles.inactiveBadge}`}>
+                  v{version.versionNumber}{activeVersionFilename === version.filename ? ' — active' : ''}
                 </span>
                 <div>
                   <div className={styles.versionDate}>{formatDate(version.createdAt)}</div>
                 </div>
               </div>
               <div className={styles.versionRight}>
-                {activeVersion === version.filename
+                {activeVersionFilename === version.filename
                   ? <span className={styles.ghostLabel}>ghost source</span>
                   : <button
                       className={styles.setActiveBtn}
@@ -167,10 +163,26 @@ export default function AIVersionPanel({ projectId, onActiveVersionChange }) {
       </div>
 
       <div className={styles.right}>
-        {selectedContent
-          ? <div className={styles.preview}>{selectedContent}</div>
-          : <div className={styles.previewEmpty}>Select a version to preview it</div>
-        }
+        {selectedContent ? (
+          <>
+            <div className={styles.previewHeader}>
+              <span className={styles.previewTitle}>
+                {versions.find(v => v.filename === selectedVersion)?.versionNumber 
+                  ? `Version ${versions.find(v => v.filename === selectedVersion).versionNumber}`
+                  : 'Preview'}
+              </span>
+              <button 
+                className={`${styles.copyBtn} ${copied ? styles.copied : ''}`}
+                onClick={handleCopy}
+              >
+                {copied ? 'Copied!' : 'Copy to clipboard'}
+              </button>
+            </div>
+            <div className={styles.preview}>{selectedContent}</div>
+          </>
+        ) : (
+          <div className={styles.previewEmpty}>Select a version to preview it</div>
+        )}
       </div>
     </div>
   )
