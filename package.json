@@ -8,18 +8,31 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:mac": "electron-builder --mac",
-    "build:win": "electron-builder --win"
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win"
   },
   "build": {
     "appId": "com.baseline.app",
     "productName": "Baseline",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "build/**/*",
+      "package.json"
+    ],
     "mac": {
-      "icon": "build/icon.png",
+      "icon": "build/icon.icns",
       "category": "public.app-category.productivity"
     },
     "win": {
-      "icon": "build/icon.png"
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "uninstallDisplayName": "Baseline",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "directories": {
       "output": "release"

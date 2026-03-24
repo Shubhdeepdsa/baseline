@@ -44,9 +44,4 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@xenova/transformers'],
   },
-  build: {
-    rollupOptions: {
-      external: ['@xenova/transformers'],
-    },
-  },
 })
