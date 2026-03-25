@@ -40,6 +40,28 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, '-').slice(0, 19)
 }
 
+function slugifyName(name) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+function filenameToName(filename) {
+  return filename.replace(/\.md$/, '').replace(/-/g, ' ')
+}
+
+function rewriteWikiLinks(content, fromFilename, toName) {
+  const fromSlug = fromFilename.replace(/\.md$/, '')
+
+  return content.replace(/\[\[([^[\]]+?)\]\]/g, (match, label) => {
+    return slugifyName(label) === fromSlug ? `[[${toName}]]` : match
+  })
+}
+
 // ─── IPC HANDLERS ──────────────────────────────────────────────────────────
 
 ipcMain.handle('consoleError', (_, errStr) => {
@@ -81,7 +103,7 @@ ipcMain.handle('getProjects', () => {
 
 // Create a new project — creates folder + brain-dump.md + writing.md + ai-versions/
 ipcMain.handle('createProject', (_, name) => {
-  const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  const id = slugifyName(name)
   const projectDir = getProjectDir(id)
 
   if (fs.existsSync(projectDir)) {
@@ -273,12 +295,12 @@ ipcMain.handle('getBrainDumps', (_, projectId) => {
 
   return files.map(filename => ({
     filename,
-    name: filename.replace('.md', '').replace(/-/g, ' '),
+    name: filenameToName(filename),
   }))
 })
 
 ipcMain.handle('createBrainDump', (_, projectId, name) => {
-  const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  const id = slugifyName(name)
   const filename = `${id}.md`
   const dumpsDir = path.join(getProjectDir(projectId), 'brain-dumps')
   ensureDir(dumpsDir)
@@ -290,6 +312,63 @@ ipcMain.handle('createBrainDump', (_, projectId, name) => {
 
   fs.writeFileSync(filePath, '', 'utf8')
   return { filename, name }
+})
+
+ipcMain.handle('renameBrainDump', (_, projectId, oldFilename, requestedName) => {
+  if (oldFilename === 'main.md') {
+    return { error: 'Cannot rename the default brain dump.' }
+  }
+
+  const newSlug = slugifyName(requestedName)
+  if (!newSlug) {
+    return { error: 'Please enter a valid brain dump name.' }
+  }
+
+  const newFilename = `${newSlug}.md`
+  const newName = filenameToName(newFilename)
+  const projectDir = getProjectDir(projectId)
+  const dumpsDir = path.join(projectDir, 'brain-dumps')
+  ensureDir(dumpsDir)
+
+  const oldPath = path.join(dumpsDir, oldFilename)
+  const newPath = path.join(dumpsDir, newFilename)
+
+  if (!fs.existsSync(oldPath)) {
+    return { error: 'That brain dump no longer exists.' }
+  }
+
+  if (newFilename !== oldFilename && fs.existsSync(newPath)) {
+    return { error: 'A brain dump with this name already exists.' }
+  }
+
+  try {
+    if (newFilename !== oldFilename) {
+      fs.renameSync(oldPath, newPath)
+    }
+
+    const files = fs.readdirSync(dumpsDir).filter(file => file.endsWith('.md'))
+    files.forEach(filename => {
+      const filePath = path.join(dumpsDir, filename)
+      const content = fs.readFileSync(filePath, 'utf8')
+      const updated = rewriteWikiLinks(content, oldFilename, newName)
+
+      if (updated !== content) {
+        fs.writeFileSync(filePath, updated, 'utf8')
+      }
+    })
+
+    const activeFilePath = path.join(projectDir, 'active-braindump.txt')
+    if (fs.existsSync(activeFilePath)) {
+      const activeFilename = fs.readFileSync(activeFilePath, 'utf8').trim()
+      if (activeFilename === oldFilename) {
+        fs.writeFileSync(activeFilePath, newFilename, 'utf8')
+      }
+    }
+
+    return { success: true, filename: newFilename, name: newName }
+  } catch (err) {
+    return { error: err.message }
+  }
 })
 
 ipcMain.handle('deleteBrainDump', (_, projectId, filename) => {

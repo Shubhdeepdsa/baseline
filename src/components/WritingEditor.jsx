@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -7,6 +7,7 @@ import styles from './WritingEditor.module.css'
 import { useGhostLogic } from '../hooks/useGhostLogic'
 import { useSettings } from '../hooks/useSettings'
 import GhostLayer from './GhostLayer'
+import { editorToMarkdown, markdownToHtml } from '../utils/tiptapMarkdown'
 
 // Toolbar button component
 function ToolBtn({ onClick, active, children, title }) {
@@ -75,77 +76,13 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
     if (!editor || !projectId) return
     window.electron.readFile(projectId, 'writing').then(result => {
       if (result.content) {
-        editor.commands.setContent(markdownToHtml(result.content))
+        editor.commands.setContent(markdownToHtml(result.content), false)
       } else {
-        editor.commands.setContent('')
+        editor.commands.setContent('', false)
       }
       setSaved(true)
     })
   }, [projectId, editor])
-
-  // Convert editor content to simple markdown for saving
-  function editorToMarkdown(editor) {
-    const json = editor.getJSON()
-    return jsonToMarkdown(json)
-  }
-
-  function jsonToMarkdown(node) {
-    if (!node) return ''
-    if (node.type === 'doc') {
-      return node.content?.map(jsonToMarkdown).join('\n\n') || ''
-    }
-    if (node.type === 'paragraph') {
-      return node.content?.map(inlineToMarkdown).join('') || ''
-    }
-    if (node.type === 'heading') {
-      const hashes = '#'.repeat(node.attrs?.level || 1)
-      return `${hashes} ${node.content?.map(inlineToMarkdown).join('') || ''}`
-    }
-    if (node.type === 'bulletList') {
-      return node.content?.map(item => `- ${item.content?.map(jsonToMarkdown).join('')}`).join('\n') || ''
-    }
-    if (node.type === 'orderedList') {
-      return node.content?.map((item, i) => `${i + 1}. ${item.content?.map(jsonToMarkdown).join('')}`).join('\n') || ''
-    }
-    if (node.type === 'listItem') {
-      return node.content?.map(jsonToMarkdown).join('') || ''
-    }
-    return node.content?.map(inlineToMarkdown).join('') || ''
-  }
-
-  function inlineToMarkdown(node) {
-    if (!node) return ''
-    if (node.type === 'text') {
-      let text = node.text || ''
-      const marks = node.marks || []
-      if (marks.find(m => m.type === 'bold')) text = `**${text}**`
-      if (marks.find(m => m.type === 'italic')) text = `*${text}*`
-      if (marks.find(m => m.type === 'underline')) text = `<u>${text}</u>`
-      return text
-    }
-    return ''
-  }
-
-  // Convert simple markdown to HTML for loading into TipTap
-  function markdownToHtml(markdown) {
-    if (!markdown) return ''
-    let html = markdown
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .split('\n\n')
-      .map(block => {
-        if (block.startsWith('<h')) return block
-        if (block.includes('<li>')) return `<ul>${block}</ul>`
-        if (block.trim()) return `<p>${block}</p>`
-        return ''
-      })
-      .filter(Boolean)
-      .join('')
-    return html
-  }
 
   async function handleExport(format) {
     if (!editor) return

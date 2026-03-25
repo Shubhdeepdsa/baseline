@@ -17,8 +17,8 @@ contextBridge.exposeInMainWorld('electron', {
   deleteProject: (projectId) => ipcRenderer.invoke('deleteProject', projectId),
 
   // Files
-  readFile: (projectId, type) => ipcRenderer.invoke('readFile', projectId, type),
-  saveFile: (projectId, type, content) => ipcRenderer.invoke('saveFile', projectId, type, content),
+  readFile: (projectId, type, filename) => ipcRenderer.invoke('readFile', projectId, type, filename),
+  saveFile: (projectId, type, content, filename) => ipcRenderer.invoke('saveFile', projectId, type, content, filename),
 
   // AI Versions
   getVersions: (projectId) => ipcRenderer.invoke('getVersions', projectId),
@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('electron', {
   // Brain Dumps
   getBrainDumps: (projectId) => ipcRenderer.invoke('getBrainDumps', projectId),
   createBrainDump: (projectId, name) => ipcRenderer.invoke('createBrainDump', projectId, name),
+  renameBrainDump: (projectId, filename, name) => ipcRenderer.invoke('renameBrainDump', projectId, filename, name),
   deleteBrainDump: (projectId, filename) => ipcRenderer.invoke('deleteBrainDump', projectId, filename),
 
   // Settings
