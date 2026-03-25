@@ -5,6 +5,7 @@ import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
 import styles from './WritingEditor.module.css'
 import { useGhostLogic } from '../hooks/useGhostLogic'
+import { useSettings } from '../hooks/useSettings'
 import GhostLayer from './GhostLayer'
 
 // Toolbar button component
@@ -25,6 +26,8 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
   const [wordCount, setWordCount] = useState(0)
   const [saved, setSaved] = useState(true)
   const [saveTimer, setSaveTimer] = useState(null)
+  const { settings, saveSetting } = useSettings()
+  const ghostBehavior = settings.ghostBehavior || 'hide' // default
 
   const { ghosts, embedStatus, processText } = useGhostLogic(activeVersionContent)
   const coveredCount = ghosts.filter(g => g.covered).length
@@ -256,27 +259,7 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
         <EditorContent editor={editor} className={styles.editor} />
 
         {/* Ghost text layer */}
-        <GhostLayer ghosts={ghosts} />
-      </div>
-
-      {/* Legend + status bar */}
-      <div className={styles.legend}>
-        <div className={styles.legendItem}>
-          <div className={styles.legendBlock} style={{ background: 'var(--ghost-g-bg)', border: '1px solid var(--ghost-g-text)' }} />
-          Covering
-        </div>
-        <div className={styles.legendItem}>
-          <div className={styles.legendBlock} style={{ background: 'var(--ghost-o-bg)', border: '1px solid var(--ghost-o-text)' }} />
-          Strong
-        </div>
-        <div className={styles.legendItem}>
-          <div className={styles.legendBlock} style={{ background: 'var(--ghost-y-bg)', border: '1px solid var(--ghost-y-text)' }} />
-          Moderate
-        </div>
-        <div className={styles.legendItem}>
-          <div className={styles.legendBlock} style={{ background: 'var(--bg3)', border: '1px solid var(--border2)' }} />
-          Not yet
-        </div>
+        <GhostLayer ghosts={ghosts} behavior={ghostBehavior} />
       </div>
 
       <div className={styles.statusBar}>
@@ -284,7 +267,58 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
           <div className={styles.statusDot} />
           {coveredCount > 0 ? `${coveredCount} of ${ghosts.length} covered` : `${wordCount} words`}
         </div>
-        <div className={styles.statusItem} style={{ marginLeft: 'auto' }}>
+
+        <div className={styles.statusSep} />
+
+        <div className={styles.legend}>
+          <div className={styles.legendItem} title="High overlap">
+            <div className={styles.legendBlock} style={{ background: 'var(--ghost-g-bg)', border: '1px solid var(--ghost-g-text)' }} />
+            Covering
+          </div>
+          <div className={styles.legendItem} title="Strong overlap">
+            <div className={styles.legendBlock} style={{ background: 'var(--ghost-o-bg)', border: '1px solid var(--ghost-o-text)' }} />
+            Strong
+          </div>
+          <div className={styles.legendItem} title="Moderate overlap">
+            <div className={styles.legendBlock} style={{ background: 'var(--ghost-y-bg)', border: '1px solid var(--ghost-y-text)' }} />
+            Moderate
+          </div>
+          <div className={styles.legendItem} title="Not yet addressed">
+            <div className={styles.legendBlock} style={{ background: 'var(--bg3)', border: '1px solid var(--border2)' }} />
+            Not yet
+          </div>
+        </div>
+
+        <div className={styles.statusSpacer} />
+
+        <div className={styles.behaviorToggle}>
+          <span className={styles.behaviorLabel}>After covering:</span>
+          <button 
+            className={`${styles.behaviorBtn} ${ghostBehavior === 'hide' ? styles.behaviorBtnActive : ''}`}
+            onClick={() => saveSetting('ghostBehavior', 'hide')}
+            title="Hide covered ghost text"
+          >
+            Hide
+          </button>
+          <button 
+            className={`${styles.behaviorBtn} ${ghostBehavior === 'strike' ? styles.behaviorBtnActive : ''}`}
+            onClick={() => saveSetting('ghostBehavior', 'strike')}
+            title="Strike-through covered ghost text"
+          >
+            Strike
+          </button>
+          <button 
+            className={`${styles.behaviorBtn} ${ghostBehavior === 'none' ? styles.behaviorBtnActive : ''}`}
+            onClick={() => saveSetting('ghostBehavior', 'none')}
+            title="Leave covered ghost text visible"
+          >
+            Stay
+          </button>
+        </div>
+
+        <div className={styles.statusSep} />
+
+        <div className={styles.statusItem}>
           {embedStatus === 'loading' && <span className={styles.badge}>Loading model...</span>}
           {embedStatus === 'ready' && <span className={styles.badge}>MiniLM ready</span>}
           {embedStatus.startsWith('error') && <span style={{ color: '#E24B4A', fontSize: 10 }}>{embedStatus}</span>}

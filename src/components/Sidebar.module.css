@@ -36,8 +36,16 @@
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  45%, 55% { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  45%,
+  55% {
+    opacity: 0;
+  }
 }
 
 .newBtn {
@@ -59,6 +67,66 @@
 .newBtn:hover {
   background: var(--bg3);
 }
+
+.searchContainer {
+  margin-top: 14px;
+  position: relative;
+}
+
+.searchInput {
+  width: 100%;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 8px 10px 8px 30px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+  background: var(--bg2);
+}
+
+.searchInput::placeholder {
+  color: var(--text3);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.clearBtn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.clearBtn:hover {
+  color: var(--text);
+  background: var(--bg3);
+}
+
 
 .plus {
   width: 16px;
@@ -167,7 +235,7 @@
 }
 
 .footer {
-  padding: 14px;
+  padding: 9.5px;
   border-top: 1px solid var(--border);
   font-size: 10px;
   color: var(--text3);

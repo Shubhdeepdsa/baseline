@@ -40,12 +40,26 @@
   background: var(--ghost-g-bg);
 }
 
-/* covered — animated out */
-.covered {
+/* covered behavior: hide */
+.hide.covered {
   max-height: 0;
   opacity: 0;
   padding-top: 0;
   padding-bottom: 0;
   margin-top: 0;
   margin-bottom: 0;
+  pointer-events: none;
+}
+
+/* covered behavior: strike */
+.strike.covered {
+  text-decoration: line-through;
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+/* covered behavior: none (nothing happens, stays as is) */
+.none.covered {
+  /* No special styles, stays in its green/orange/yellow state but maybe slightly dimmed? */
+  opacity: 0.8;
 }
