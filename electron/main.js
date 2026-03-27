@@ -62,6 +62,67 @@ function rewriteWikiLinks(content, fromFilename, toName) {
   })
 }
 
+function getVersionProvenancePath(projectId, filename) {
+  return path.join(getProjectDir(projectId), 'ai-versions', `${filename}.provenance.json`)
+}
+
+function parseVersionFilename(filename) {
+  const match = filename.match(/^v(\d+)(?:_(master|derived-from-v(\d+)))?(?:_.+)?\.md$/)
+  if (!match) {
+    return {
+      versionNumber: null,
+      kind: 'full',
+      sourceVersionNumber: null,
+    }
+  }
+
+  const versionNumber = Number(match[1])
+  const tag = match[2] || null
+  const sourceVersionNumber = match[3] ? Number(match[3]) : null
+
+  if (tag === 'master') {
+    return { versionNumber, kind: 'master', sourceVersionNumber: null }
+  }
+
+  if (tag?.startsWith('derived-from-v')) {
+    return { versionNumber, kind: 'derived', sourceVersionNumber }
+  }
+
+  return { versionNumber, kind: 'full', sourceVersionNumber: null }
+}
+
+function getNextVersionNumber(versionsDir) {
+  const existing = fs.readdirSync(versionsDir)
+    .filter(f => f.endsWith('.md'))
+    .map(filename => parseVersionFilename(filename).versionNumber)
+    .filter(Number.isFinite)
+
+  if (existing.length === 0) return 1
+  return Math.max(...existing) + 1
+}
+
+function readVersionProvenance(projectId, filename) {
+  const provenancePath = getVersionProvenancePath(projectId, filename)
+  try {
+    return JSON.parse(fs.readFileSync(provenancePath, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+function writeVersionProvenance(projectId, filename, provenance) {
+  const provenancePath = getVersionProvenancePath(projectId, filename)
+
+  if (!provenance || !Array.isArray(provenance.segments) || provenance.segments.length === 0) {
+    if (fs.existsSync(provenancePath)) {
+      fs.unlinkSync(provenancePath)
+    }
+    return
+  }
+
+  fs.writeFileSync(provenancePath, JSON.stringify(provenance, null, 2), 'utf8')
+}
+
 // ─── IPC HANDLERS ──────────────────────────────────────────────────────────
 
 ipcMain.handle('consoleError', (_, errStr) => {
@@ -208,56 +269,122 @@ ipcMain.handle('saveFile', (_, projectId, type, content, filename = 'main.md') =
   }
 })
 
-// Get all AI versions for a project — returns array of { filename, versionNumber, createdAt }
+// Get all AI versions for a project — returns array of version metadata
 ipcMain.handle('getVersions', (_, projectId) => {
   const versionsDir = path.join(getProjectDir(projectId), 'ai-versions')
   ensureDir(versionsDir)
 
   const files = fs.readdirSync(versionsDir)
     .filter(f => f.endsWith('.md'))
-    .sort()
-    .reverse()
+    .map(filename => {
+      const stat = fs.statSync(path.join(versionsDir, filename))
+      const parsed = parseVersionFilename(filename)
+      return {
+        filename,
+        createdAt: stat.birthtime.toISOString(),
+        versionNumber: parsed.versionNumber,
+        kind: parsed.kind,
+        sourceVersionNumber: parsed.sourceVersionNumber,
+      }
+    })
+    .sort((a, b) => {
+      const aVersion = Number.isFinite(a.versionNumber) ? a.versionNumber : -1
+      const bVersion = Number.isFinite(b.versionNumber) ? b.versionNumber : -1
+      if (aVersion !== bVersion) return bVersion - aVersion
+      return new Date(b.createdAt) - new Date(a.createdAt)
+    })
 
-  return files.map((filename, index) => {
-    const versionNumber = files.length - index
-    const stat = fs.statSync(path.join(versionsDir, filename))
+  return files.map((version) => {
+    const provenance = readVersionProvenance(projectId, version.filename)
+    const sourceCount = Array.isArray(provenance?.sources) ? provenance.sources.length : 0
+
+    let label = version.versionNumber ? `Version ${version.versionNumber}` : version.filename.replace(/\.md$/, '')
+    let subtitle = ''
+    if (version.kind === 'master') {
+      subtitle = sourceCount > 0 ? `${sourceCount} source${sourceCount === 1 ? '' : 's'}` : 'master ghost'
+      label = version.versionNumber ? `Master v${version.versionNumber}` : 'Master ghost'
+    } else if (version.kind === 'derived') {
+      subtitle = version.sourceVersionNumber ? `derived from v${version.sourceVersionNumber}` : 'derived version'
+    } else {
+      subtitle = 'full version'
+    }
+
     return {
-      filename,
-      versionNumber,
-      createdAt: stat.birthtime.toISOString(),
+      ...version,
+      label,
+      subtitle,
+      sourceCount,
     }
   })
 })
 
-// Save a new AI version — auto-names with timestamp
-ipcMain.handle('saveVersion', (_, projectId, content) => {
+// Save a new AI version with metadata and optional provenance
+ipcMain.handle('saveVersion', (_, projectId, payload) => {
   const versionsDir = path.join(getProjectDir(projectId), 'ai-versions')
   ensureDir(versionsDir)
 
-  const existing = fs.readdirSync(versionsDir).filter(f => f.endsWith('.md'))
-  const versionNumber = existing.length + 1
-  const filename = `v${versionNumber}_${getTimestamp()}.md`
+  const normalized = typeof payload === 'string'
+    ? { content: payload, kind: 'full', sourceFilename: null, provenance: null }
+    : {
+        content: payload?.content || '',
+        kind: payload?.kind || 'full',
+        sourceFilename: payload?.sourceFilename || null,
+        provenance: payload?.provenance || null,
+      }
+
+  const versionNumber = getNextVersionNumber(versionsDir)
+  const filename =
+    normalized.kind === 'master'
+      ? `v${versionNumber}_master_${getTimestamp()}.md`
+      : normalized.kind === 'derived' && normalized.sourceFilename
+        ? `v${versionNumber}_derived-from-v${parseVersionFilename(normalized.sourceFilename).versionNumber || 'x'}_${getTimestamp()}.md`
+        : `v${versionNumber}_${getTimestamp()}.md`
   const filePath = path.join(versionsDir, filename)
 
-  fs.writeFileSync(filePath, content, 'utf8')
-  return { filename, versionNumber }
+  fs.writeFileSync(filePath, normalized.content, 'utf8')
+  writeVersionProvenance(projectId, filename, normalized.provenance)
+
+  const parsed = parseVersionFilename(filename)
+  return {
+    filename,
+    versionNumber,
+    kind: parsed.kind,
+    sourceVersionNumber: parsed.sourceVersionNumber,
+  }
 })
 
 // Read a specific AI version file
 ipcMain.handle('readVersion', (_, projectId, filename) => {
   const filePath = path.join(getProjectDir(projectId), 'ai-versions', filename)
+  const parsed = parseVersionFilename(filename)
   try {
-    return { content: fs.readFileSync(filePath, 'utf8') }
+    return {
+      content: fs.readFileSync(filePath, 'utf8'),
+      provenance: readVersionProvenance(projectId, filename),
+      kind: parsed.kind,
+      versionNumber: parsed.versionNumber,
+      sourceVersionNumber: parsed.sourceVersionNumber,
+    }
   } catch {
-    return { content: '' }
+    return {
+      content: '',
+      provenance: null,
+      kind: parsed.kind,
+      versionNumber: parsed.versionNumber,
+      sourceVersionNumber: parsed.sourceVersionNumber,
+    }
   }
 })
 
 // Delete a specific AI version file
 ipcMain.handle('deleteVersion', (_, projectId, filename) => {
   const filePath = path.join(getProjectDir(projectId), 'ai-versions', filename)
+  const provenancePath = getVersionProvenancePath(projectId, filename)
   try {
     fs.unlinkSync(filePath)
+    if (fs.existsSync(provenancePath)) {
+      fs.unlinkSync(provenancePath)
+    }
     return { success: true }
   } catch (err) {
     return { error: err.message }
