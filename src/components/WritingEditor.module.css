@@ -76,7 +76,12 @@
 .editorWrap {
   flex: 1;
   overflow-y: auto;
+  position: relative;
   padding: 36px 48px 24px;
+}
+
+.editorWrapSmoothCaret :global(.ProseMirror) {
+  caret-color: transparent;
 }
 
 /* TipTap editor styles */

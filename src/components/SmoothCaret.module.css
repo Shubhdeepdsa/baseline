@@ -1,0 +1,46 @@
+.caret {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent), 0 0 12px color-mix(in srgb, var(--accent) 32%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 8;
+  transition: transform 130ms cubic-bezier(0.22, 1, 0.36, 1), height 130ms cubic-bezier(0.22, 1, 0.36, 1), opacity 90ms ease-out;
+  will-change: transform, height, opacity;
+}
+
+.visible {
+  opacity: 1;
+}
+
+.blinking {
+  animation: blink 1.15s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 45% {
+    opacity: 1;
+  }
+
+  50%, 95% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    transition: opacity 90ms ease-out;
+  }
+
+  .visible {
+    animation: none;
+  }
+}

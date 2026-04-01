@@ -166,6 +166,10 @@
   position: relative;
 }
 
+.editorWrapSmoothCaret :global(.ProseMirror) {
+  caret-color: transparent;
+}
+
 .editor {
   min-height: 100%;
 }

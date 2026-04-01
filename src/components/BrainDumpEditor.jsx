@@ -5,6 +5,8 @@ import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
 import styles from './BrainDumpEditor.module.css'
+import SmoothCaret from './SmoothCaret'
+import { useSmoothCaret } from '../hooks/useSmoothCaret'
 import { editorToMarkdown, markdownToHtml } from '../utils/tiptapMarkdown'
 import {
   brainDumpNameFromFilename,
@@ -173,6 +175,8 @@ export default function BrainDumpEditor({ projectId }) {
       setAutocomplete(null)
     },
   })
+
+  const { caret, nativeCaretHidden } = useSmoothCaret(editor, editorWrapRef)
 
   const insertAutocompleteSuggestion = useCallback((dump) => {
     if (!editor || !autocomplete || !dump) return
@@ -506,7 +510,7 @@ export default function BrainDumpEditor({ projectId }) {
         </div>
 
         <div
-          className={styles.editorWrap}
+          className={`${styles.editorWrap} ${nativeCaretHidden ? styles.editorWrapSmoothCaret : ''}`}
           ref={editorWrapRef}
           onScroll={() => {
             if (editor) syncAutocomplete(editor)
@@ -518,6 +522,7 @@ export default function BrainDumpEditor({ projectId }) {
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
           />
+          <SmoothCaret caret={caret} />
           {autocomplete && (
             <div
               className={styles.autocomplete}

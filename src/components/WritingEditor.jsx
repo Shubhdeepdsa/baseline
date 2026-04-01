@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -6,7 +6,9 @@ import Placeholder from '@tiptap/extension-placeholder'
 import styles from './WritingEditor.module.css'
 import { useGhostLogic } from '../hooks/useGhostLogic'
 import { useSettings } from '../hooks/useSettings'
+import { useSmoothCaret } from '../hooks/useSmoothCaret'
 import GhostLayer from './GhostLayer'
+import SmoothCaret from './SmoothCaret'
 import { editorToMarkdown, markdownToHtml } from '../utils/tiptapMarkdown'
 
 // Toolbar button component
@@ -27,6 +29,7 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
   const [wordCount, setWordCount] = useState(0)
   const [saved, setSaved] = useState(true)
   const [saveTimer, setSaveTimer] = useState(null)
+  const editorWrapRef = useRef(null)
   const { settings, saveSetting } = useSettings()
   const ghostBehavior = settings.ghostBehavior || 'hide' // default
 
@@ -70,6 +73,8 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
       })
     },
   })
+
+  const { caret, nativeCaretHidden } = useSmoothCaret(editor, editorWrapRef)
 
   // Load content when project changes
   useEffect(() => {
@@ -192,8 +197,12 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
       </div>
 
       {/* Editor area */}
-      <div className={styles.editorWrap}>
+      <div
+        ref={editorWrapRef}
+        className={`${styles.editorWrap} ${nativeCaretHidden ? styles.editorWrapSmoothCaret : ''}`}
+      >
         <EditorContent editor={editor} className={styles.editor} />
+        <SmoothCaret caret={caret} />
 
         {/* Ghost text layer */}
         <GhostLayer ghosts={ghosts} behavior={ghostBehavior} />
