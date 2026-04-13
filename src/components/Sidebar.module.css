@@ -241,3 +241,25 @@
   color: var(--text3);
   letter-spacing: 0.06em;
 }
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settingsBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settingsBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-color);
+}

@@ -1,0 +1,159 @@
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--bg);
+  align-items: flex-start;
+  padding-left: 24px;
+}
+
+.content {
+  width: 100%;
+  max-width: 700px;
+  padding: 40px 24px 60px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.sectionTitle {
+  margin: 0 0 16px 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  font-weight: 600;
+}
+
+.settingList {
+  display: flex;
+  flex-direction: column;
+}
+
+.settingItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settingItem:last-child {
+  border-bottom: none;
+}
+
+.settingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settingTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settingIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  transform: scale(0.9);
+}
+
+.settingTitle {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.settingDesc {
+  font-size: 0.75rem;
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+.toggle {
+  width: 30px;
+  height: 16px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggleOn {
+  border-color: var(--text2);
+}
+
+.toggleKnob {
+  width: 10px;
+  height: 10px;
+  background: var(--text3);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toggleOn .toggleKnob {
+  transform: translateX(14px);
+  background: var(--text);
+}
+
+.select {
+  background: var(--bg2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.select:focus {
+  border-color: var(--text2);
+}
+
+.themeToggle {
+  width: 38px;
+  height: 20px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.themeToggle.isDark {
+  border-color: var(--text2);
+}
+
+.themeKnob {
+  width: 12px;
+  height: 12px;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+}
+
+.themeToggle.isDark .themeKnob {
+  transform: translateX(18px);
+  color: var(--text);
+}

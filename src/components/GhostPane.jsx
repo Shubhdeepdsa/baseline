@@ -208,6 +208,7 @@ export default function GhostPane({
   annotations = [],
   onAnnotationsChange,
   onRemoveSentences,
+  showHighlights = true,
 }) {
   const paneRef = useRef(null)
   const actionBoxRef = useRef(null)
@@ -647,9 +648,9 @@ export default function GhostPane({
                 key={ghost.id}
                 className={[
                   styles.ghost,
-                  styles[ghost.state],
-                  ghost.covered ? styles.covered : '',
-                  ghost.covered ? styles[behavior] : '',
+                  showHighlights ? styles[ghost.state] : '',
+                  (showHighlights && ghost.covered) ? styles.covered : '',
+                  (showHighlights && ghost.covered) ? styles[behavior] : '',
                   ghost.removed ? styles.removed : '',
                 ].filter(Boolean).join(' ')}
                 data-sentence-id={ghost.id}

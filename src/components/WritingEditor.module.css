@@ -230,19 +230,15 @@
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 14px;
+  padding: 6px 14px;
   flex-shrink: 0;
-  flex-wrap: wrap;
 }
 
-.statusMeta,
-.statusControls {
+.statusMeta {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .statusSep {
@@ -353,4 +349,8 @@
 .colorSwatchActive {
   outline: 2px solid var(--hl-active-ring);
   outline-offset: 1px;
+}
+
+.singlePane {
+  display: block;
 }
