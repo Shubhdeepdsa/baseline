@@ -2,15 +2,19 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useEmbeddings } from './useEmbeddings'
 import { cosineSimilarity, similarityToState, COVER_THRESHOLD } from '../utils/similarity'
 import { splitSentences, splitIntoGhostSentences } from '../utils/sentenceSplit'
+import { getWordSuggestion } from '../utils/suggestion'
 
-export function useGhostLogic(activeVersionContent, removedSentenceIds = []) {
+export function useGhostLogic(activeVersionContent, removedSentenceIds = [], settings = {}) {
   const { embed, status: embedStatus } = useEmbeddings()
+  const enableMiniLM = settings.enableMiniLM !== false
+  const enableIntellisense = settings.enableIntellisense !== false
 
   // Array of ghost sentence objects: { id, text, start, end, state, covered, removed }
   // state: 'dim' | 'yellow' | 'orange' | 'green'
   // covered: boolean — once true, the sentence fades out permanently
   const [ghosts, setGhosts] = useState([])
   const [ghostSourceText, setGhostSourceText] = useState('')
+  const [suggestion, setSuggestion] = useState('')
 
   // Pre-computed embeddings for each ghost sentence
   const ghostEmbeddings = useRef([])
@@ -81,15 +85,22 @@ export function useGhostLogic(activeVersionContent, removedSentenceIds = []) {
   }, [activeVersionContent])
 
   useEffect(() => {
-    if (embedStatus !== 'ready' || ghosts.length === 0) return
+    if (!enableMiniLM || embedStatus !== 'ready' || ghosts.length === 0) return
 
     Promise.all(ghosts.map(ghost => getTextEmbedding(ghost.text))).then(embeddings => {
       ghostEmbeddings.current = embeddings
     })
-  }, [embedStatus, getTextEmbedding, ghostSentenceKey])
+  }, [embedStatus, getTextEmbedding, ghostSentenceKey, enableMiniLM])
 
   // Called on every editor update — debounced to 300ms
   const processText = useCallback((fullText) => {
+    if (!enableMiniLM) {
+       // If matching is disabled, we don't process similarity.
+       // We can optionally still do intellisense, but let's clear it just in case
+       if (suggestion) setSuggestion('')
+       return
+    }
+
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
 
     debounceTimer.current = setTimeout(async () => {
@@ -129,7 +140,7 @@ export function useGhostLogic(activeVersionContent, removedSentenceIds = []) {
 
       // Step 2: Current sentence → highlight matching ghosts
       let currentSims = []
-      if (currentSentence.length >= 8) {
+      if (currentSentence.length >= 2) {
         const currEmb = await getTextEmbedding(currentSentence)
         currentSims = ghostEmbeddings.current.map(ghostEmb => cosineSimilarity(currEmb, ghostEmb))
       }
@@ -140,6 +151,17 @@ export function useGhostLogic(activeVersionContent, removedSentenceIds = []) {
 
       // Step 3: Update ghost states
       setGhosts(prev => {
+        let maxSim = -1
+
+        // Find WORD suggestion candidate
+        let bestSuggestion = ''
+        if (enableIntellisense && fullText.trim().length >= 1 && activeVersionContent) {
+           bestSuggestion = getWordSuggestion(fullText, activeVersionContent)
+        }
+        
+        // Update suggestion state asynchronously to avoid React warnings
+        setTimeout(() => setSuggestion(bestSuggestion), 0)
+
         let changed = false
         const nextGhosts = prev.map((ghost, i) => {
           const isRemoved = removedIdSetRef.current.has(ghost.id)
@@ -172,7 +194,7 @@ export function useGhostLogic(activeVersionContent, removedSentenceIds = []) {
         return changed ? nextGhosts : prev
       })
     }, 300)
-  }, [getTextEmbedding])
+  }, [getTextEmbedding, enableMiniLM, enableIntellisense, activeVersionContent])
 
-  return { ghosts, ghostSourceText, embedStatus, processText }
+  return { ghosts, ghostSourceText, embedStatus, processText, suggestion }
 }

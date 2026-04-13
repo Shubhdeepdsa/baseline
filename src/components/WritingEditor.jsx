@@ -3,9 +3,9 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
+import { GhostIntellisense } from '../extensions/GhostIntellisense'
 import styles from './WritingEditor.module.css'
 import { useGhostLogic } from '../hooks/useGhostLogic'
-import { useSettings } from '../hooks/useSettings'
 import { useSmoothCaret } from '../hooks/useSmoothCaret'
 import GhostPane from './GhostPane'
 import SmoothCaret from './SmoothCaret'
@@ -44,7 +44,13 @@ function ToolBtn({ onClick, active, children, title }) {
   )
 }
 
-export default function WritingEditor({ projectId, activeVersionFilename, activeVersionContent }) {
+export default function WritingEditor({ 
+  projectId, 
+  activeVersionFilename, 
+  activeVersionContent,
+  settings,
+  saveSetting
+}) {
   const [wordCount, setWordCount] = useState(0)
   const [saved, setSaved] = useState(true)
   const [ghostState, setGhostState] = useState({ versions: {} })
@@ -53,7 +59,7 @@ export default function WritingEditor({ projectId, activeVersionFilename, active
   const paneRatioRef = useRef(0.62)
   const editorWrapRef = useRef(null)
   const splitViewRef = useRef(null)
-  const { settings, saveSetting } = useSettings()
+  
   const ghostBehavior = settings.ghostBehavior || 'hide'
   const ghostSelectionMode = settings.ghostSelectionMode || 'sentence'
   const ghostSplitOrientation = settings.ghostSplitOrientation || 'horizontal'
@@ -68,7 +74,7 @@ export default function WritingEditor({ projectId, activeVersionFilename, active
   const annotations = versionGhostState.annotations || []
   const removedSentenceIds = versionGhostState.removedSentenceIds || []
 
-  const { ghosts, ghostSourceText, embedStatus, processText } = useGhostLogic(activeVersionContent, removedSentenceIds)
+  const { ghosts, ghostSourceText, embedStatus, processText, suggestion } = useGhostLogic(activeVersionContent, removedSentenceIds, settings)
   const coveredCount = ghosts.filter(ghost => ghost.covered && !ghost.removed).length
   const visibleGhostCount = ghosts.filter(ghost => !ghost.removed).length
 
@@ -78,6 +84,7 @@ export default function WritingEditor({ projectId, activeVersionFilename, active
         heading: { levels: [1, 2] },
       }),
       Underline,
+      GhostIntellisense,
       Placeholder.configure({
         placeholder: 'Start writing here...',
       }),
@@ -105,6 +112,12 @@ export default function WritingEditor({ projectId, activeVersionFilename, active
   })
 
   const { caret, nativeCaretHidden } = useSmoothCaret(editor, editorWrapRef)
+
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) {
+      editor.commands.setGhostSuggestion(suggestion)
+    }
+  }, [editor, suggestion])
 
   const persistGhostState = useCallback((nextState) => {
     if (!projectId) return
@@ -373,116 +386,63 @@ export default function WritingEditor({ projectId, activeVersionFilename, active
             annotations={annotations}
             onAnnotationsChange={handleAnnotationsChange}
             onRemoveSentences={handleRemoveSentences}
+            showHighlights={settings.enableMiniLM !== false}
           />
         </div>
       </div>
 
       <div className={styles.statusBar}>
         <div className={styles.statusMeta}>
-          <div className={styles.statusItem}>
-            <div className={styles.statusDot} />
-            {ghosts.length > 0 ? `${coveredCount} of ${visibleGhostCount} covered` : 'Ghost tracking idle'}
-          </div>
+          {settings.enableMiniLM !== false && (
+            <>
+              <div className={styles.statusItem}>
+                <div className={styles.statusDot} />
+                {ghosts.length > 0 ? `${coveredCount} of ${visibleGhostCount} covered` : 'Ghost tracking idle'}
+              </div>
 
-          <div className={styles.statusSep} />
+              <div className={styles.statusSep} />
+            </>
+          )}
 
           <div className={styles.statusItem}>
             {wordCount} {wordCount === 1 ? 'word' : 'words'}
           </div>
 
-          <div className={styles.statusSep} />
+          {settings.enableMiniLM !== false && (
+            <>
+              <div className={styles.statusSep} />
 
-          <div className={styles.legend}>
-            <div className={styles.legendItem} title="High overlap">
-              <div className={styles.legendBlock} style={{ background: 'var(--ghost-g-bg)', border: '1px solid var(--ghost-g-text)' }} />
-              Covering
-            </div>
-            <div className={styles.legendItem} title="Strong overlap">
-              <div className={styles.legendBlock} style={{ background: 'var(--ghost-o-bg)', border: '1px solid var(--ghost-o-text)' }} />
-              Strong
-            </div>
-            <div className={styles.legendItem} title="Moderate overlap">
-              <div className={styles.legendBlock} style={{ background: 'var(--ghost-y-bg)', border: '1px solid var(--ghost-y-text)' }} />
-              Moderate
-            </div>
-            <div className={styles.legendItem} title="Not yet addressed">
-              <div className={styles.legendBlock} style={{ background: 'var(--bg3)', border: '1px solid var(--border2)' }} />
-              Not yet
-            </div>
-          </div>
+              <div className={styles.legend}>
+                <div className={styles.legendItem} title="High overlap">
+                  <div className={styles.legendBlock} style={{ background: 'var(--ghost-g-bg)', border: '1px solid var(--ghost-g-text)' }} />
+                  Covering
+                </div>
+                <div className={styles.legendItem} title="Strong overlap">
+                  <div className={styles.legendBlock} style={{ background: 'var(--ghost-o-bg)', border: '1px solid var(--ghost-o-text)' }} />
+                  Strong
+                </div>
+                <div className={styles.legendItem} title="Moderate overlap">
+                  <div className={styles.legendBlock} style={{ background: 'var(--ghost-y-bg)', border: '1px solid var(--ghost-y-text)' }} />
+                  Moderate
+                </div>
+                <div className={styles.legendItem} title="Not yet addressed">
+                  <div className={styles.legendBlock} style={{ background: 'var(--bg3)', border: '1px solid var(--border2)' }} />
+                  Not yet
+                </div>
+              </div>
 
-          <div className={styles.statusSep} />
+              <div className={styles.statusSep} />
 
-          <div className={styles.statusItem}>
-            {embedStatus === 'loading' && <span className={styles.badge}>Loading model...</span>}
-            {embedStatus === 'ready' && <span className={styles.badge}>MiniLM ready</span>}
-            {embedStatus.startsWith('error') && <span style={{ color: '#E24B4A', fontSize: 10 }}>{embedStatus}</span>}
-          </div>
-          <div className={styles.statusItem}>
+              <div className={styles.statusItem}>
+                {embedStatus === 'loading' && <span className={styles.badge}>Loading model...</span>}
+                {embedStatus === 'ready' && <span className={styles.badge}>MiniLM ready</span>}
+                {embedStatus.startsWith('error') && <span style={{ color: '#E24B4A', fontSize: 10 }}>{embedStatus}</span>}
+              </div>
+            </>
+          )}
+
+          <div className={styles.statusItem} style={{ marginLeft: 'auto' }}>
             {saved ? 'Saved' : 'Saving...'}
-          </div>
-        </div>
-
-        <div className={styles.statusControls}>
-          <div className={styles.behaviorToggle}>
-            <span className={styles.behaviorLabel}>Layout</span>
-            <button
-              className={`${styles.behaviorBtn} ${ghostSplitOrientation === 'horizontal' ? styles.behaviorBtnActive : ''}`}
-              onClick={() => saveSetting('ghostSplitOrientation', 'horizontal')}
-              title="Stack writing above ghost text"
-            >
-              Horizontal
-            </button>
-            <button
-              className={`${styles.behaviorBtn} ${ghostSplitOrientation === 'vertical' ? styles.behaviorBtnActive : ''}`}
-              onClick={() => saveSetting('ghostSplitOrientation', 'vertical')}
-              title="Place writing beside ghost text"
-            >
-              Vertical
-            </button>
-          </div>
-
-          <div className={styles.behaviorToggle}>
-            <span className={styles.behaviorLabel}>After covering</span>
-            <button
-              className={`${styles.behaviorBtn} ${ghostBehavior === 'hide' ? styles.behaviorBtnActive : ''}`}
-              onClick={() => saveSetting('ghostBehavior', 'hide')}
-              title="Hide covered ghost text"
-            >
-              Hide
-            </button>
-            <button
-              className={`${styles.behaviorBtn} ${ghostBehavior === 'strike' ? styles.behaviorBtnActive : ''}`}
-              onClick={() => saveSetting('ghostBehavior', 'strike')}
-              title="Strike-through covered ghost text"
-            >
-              Strike
-            </button>
-            <button
-              className={`${styles.behaviorBtn} ${ghostBehavior === 'none' ? styles.behaviorBtnActive : ''}`}
-              onClick={() => saveSetting('ghostBehavior', 'none')}
-              title="Leave covered ghost text visible"
-            >
-              Stay
-            </button>
-          </div>
-
-          <div className={styles.behaviorToggle}>
-            <span className={styles.behaviorLabel}>Removed</span>
-            <button
-              className={`${styles.behaviorBtn} ${ghostRemovedVisibility === 'show' ? styles.behaviorBtnActive : ''}`}
-              onClick={() => saveSetting('ghostRemovedVisibility', 'show')}
-              title="Show removed ghost text with strike-through"
-            >
-              Show
-            </button>
-            <button
-              className={`${styles.behaviorBtn} ${ghostRemovedVisibility === 'hide' ? styles.behaviorBtnActive : ''}`}
-              onClick={() => saveSetting('ghostRemovedVisibility', 'hide')}
-              title="Hide removed ghost text"
-            >
-              Hide
-            </button>
           </div>
         </div>
       </div>

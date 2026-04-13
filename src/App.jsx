@@ -13,6 +13,7 @@ export default function App() {
   const { projects, createProject, deleteProject, reload } = useProjects()
   const [activeProject, setActiveProject] = useState(null)
   const [showNewModal, setShowNewModal] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
 
   // We read the saved theme synchronously from a data attribute set by preload
   const savedTheme = document.documentElement.getAttribute('data-theme') || 'dark'
@@ -81,12 +82,7 @@ export default function App() {
 
   return (
     <div className={`app-root ${theme}`} style={{ position: 'relative' }}>
-      <Titlebar
-        theme={theme}
-        onToggleTheme={handleThemeToggle}
-        ghostSelectionMode={settings.ghostSelectionMode || 'sentence'}
-        onGhostSelectionModeChange={(mode) => saveSetting('ghostSelectionMode', mode)}
-      />
+      <Titlebar />
       <div className={styles.body}>
         <Sidebar
           projects={projects}
@@ -94,9 +90,19 @@ export default function App() {
           onSelectProject={handleSelectProject}
           onNewProject={() => setShowNewModal(true)}
           onDeleteProject={handleDeleteProject}
+          onOpenSettings={() => setShowSettingsModal(true)}
         />
-        {activeProject
-          ? <ProjectView key={activeProject} projectId={activeProject} />
+        {activeProject || showSettingsModal
+          ? <ProjectView 
+              key={activeProject || 'settings'} 
+              projectId={activeProject} 
+              showSettingsTab={showSettingsModal}
+              onCloseSettings={() => setShowSettingsModal(false)}
+              theme={theme}
+              onThemeToggle={handleThemeToggle}
+              settings={settings}
+              saveSetting={saveSetting}
+            />
           : <div className={styles.empty}>
               <p>Create a project to get started.</p>
               <button className={styles.emptyBtn} onClick={() => setShowNewModal(true)}>

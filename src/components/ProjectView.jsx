@@ -5,26 +5,38 @@ import AIVersionPanel from './AIVersionPanel'
 import WritingEditor from './WritingEditor'
 import { useSettings } from '../hooks/useSettings'
 
+import SettingsContent from './SettingsContent'
+
 const TABS = [
   { id: 'braindump', label: 'Brain dump' },
   { id: 'versions', label: 'AI versions' },
   { id: 'writing', label: 'Writing' },
 ]
 
-export default function ProjectView({ projectId }) {
-  const { settings, saveSetting } = useSettings()
+export default function ProjectView({ projectId, showSettingsTab, onCloseSettings, theme, onThemeToggle, settings, saveSetting }) {
   const [activeTab, setActiveTab] = useState('writing')
+
+  // Derive visible tabs
+  const visibleTabs = projectId ? [...TABS] : []
+  if (showSettingsTab) {
+    visibleTabs.push({ id: 'settings', label: 'Settings' })
+  }
 
   // Restore active tab from settings once settings load
   useEffect(() => {
-    if (settings.lastTabId) {
+    if (showSettingsTab) {
+      setActiveTab('settings')
+    } else if (settings.lastTabId && projectId) {
       setActiveTab(settings.lastTabId)
     }
-  }, [settings.lastTabId])
+  }, [settings.lastTabId, showSettingsTab, projectId])
 
   const handleTabChange = (tabId) => {
+    if (tabId !== 'settings' && activeTab === 'settings') {
+      onCloseSettings?.()
+    }
     setActiveTab(tabId)
-    saveSetting('lastTabId', tabId)
+    if (tabId !== 'settings') saveSetting('lastTabId', tabId)
   }
   const [activeVersionFilename, setActiveVersionFilename] = useState(null)
   const [activeVersionContent, setActiveVersionContent] = useState('')
@@ -73,33 +85,54 @@ export default function ProjectView({ projectId }) {
   return (
     <div className={styles.container}>
       <div className={styles.tabs}>
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            {tab.label}
-          </button>
+        {visibleTabs.map(tab => (
+          <div key={tab.id} className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}>
+            <button
+              className={styles.tabBtn}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              {tab.label}
+            </button>
+            {tab.id === 'settings' && (
+              <button className={styles.tabCloseBtn} onClick={() => {
+                if (activeTab === 'settings') {
+                  setActiveTab(projectId ? 'writing' : null)
+                }
+                onCloseSettings?.()
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
       <div className={styles.content}>
-        {activeTab === 'braindump' && (
+        {activeTab === 'settings' && (
+          <SettingsContent 
+            settings={settings}
+            saveSetting={saveSetting}
+            currentTheme={theme}
+            onThemeToggle={onThemeToggle}
+          />
+        )}
+        {activeTab === 'braindump' && projectId && (
           <BrainDumpEditor projectId={projectId} />
         )}
-        {activeTab === 'versions' && (
+        {activeTab === 'versions' && projectId && (
           <AIVersionPanel
             projectId={projectId}
             activeVersionFilename={activeVersionFilename}
             onActiveVersionChange={handleActiveVersionChange}
           />
         )}
-        {activeTab === 'writing' && (
+        {activeTab === 'writing' && projectId && (
           <WritingEditor
             projectId={projectId}
             activeVersionFilename={activeVersionFilename}
             activeVersionContent={activeVersionContent}
+            settings={settings}
+            saveSetting={saveSetting}
           />
         )}
       </div>
