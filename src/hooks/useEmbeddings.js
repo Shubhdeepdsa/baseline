@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 let extractorInstance = null
 let loadingPromise = null
@@ -44,14 +44,14 @@ export function useEmbeddings() {
     })
   }, [])
 
-  async function embed(text) {
+  const embed = useCallback(async (text) => {
     if (!extractorInstance) {
       if (loadingPromise) await loadingPromise
       else throw new Error('Embedding model not initialized')
     }
     const output = await extractorInstance(text, { pooling: 'mean', normalize: true })
     return output.data
-  }
+  }, [])
 
   return { embed, status }
 }

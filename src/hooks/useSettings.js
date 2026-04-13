@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react'
 
 export function useSettings() {
-  const [settings, setSettings] = useState({ theme: 'dark' })
+  const [settings, setSettings] = useState({
+    theme: 'dark',
+    ghostBehavior: 'hide',
+    ghostSelectionMode: 'sentence',
+    ghostSplitOrientation: 'horizontal',
+    ghostSplitRatioHorizontal: 0.62,
+    ghostSplitRatioVertical: 0.58,
+    ghostRemovedVisibility: 'show',
+  })
 
   useEffect(() => {
     window.electron.getSettings().then(s => setSettings(s))

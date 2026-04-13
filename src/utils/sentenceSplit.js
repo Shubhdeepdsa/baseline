@@ -25,16 +25,42 @@ export function splitSentences(text) {
   return { completedSentences, currentSentence }
 }
 
-// Split a block of text (AI version) into individual sentences
+export function normalizeGhostText(text) {
+  if (!text || !text.trim()) return ''
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+// Split a block of text (AI version) into individual sentences with stable offsets.
 export function splitIntoGhostSentences(text) {
-  if (!text || !text.trim()) return []
+  const normalizedText = normalizeGhostText(text)
 
-  // Split on sentence endings, keeping the punctuation
-  const sentences = text
-    .replace(/\n+/g, ' ')
-    .split(/(?<=[.!?])\s+/)
-    .map(s => s.trim())
-    .filter(s => s.length > 10)
+  if (!normalizedText) {
+    return { normalizedText: '', sentences: [] }
+  }
 
-  return sentences
+  const sentences = []
+  const sentenceRegex = /[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g
+  let match
+  let sentenceIndex = 0
+
+  while ((match = sentenceRegex.exec(normalizedText)) !== null) {
+    const raw = match[0]
+    const trimmed = raw.trim()
+    if (trimmed.length <= 10) continue
+
+    const leadingWhitespace = raw.match(/^\s*/)?.[0].length || 0
+    const trailingWhitespace = raw.match(/\s*$/)?.[0].length || 0
+    const start = match.index + leadingWhitespace
+    const end = match.index + raw.length - trailingWhitespace
+
+    sentences.push({
+      id: `ghost-${sentenceIndex}-${start}-${end}`,
+      text: normalizedText.slice(start, end),
+      start,
+      end,
+    })
+    sentenceIndex += 1
+  }
+
+  return { normalizedText, sentences }
 }

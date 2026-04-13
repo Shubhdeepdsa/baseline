@@ -98,6 +98,7 @@ export default function ProjectView({ projectId }) {
         {activeTab === 'writing' && (
           <WritingEditor
             projectId={projectId}
+            activeVersionFilename={activeVersionFilename}
             activeVersionContent={activeVersionContent}
           />
         )}

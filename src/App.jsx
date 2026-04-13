@@ -81,7 +81,12 @@ export default function App() {
 
   return (
     <div className={`app-root ${theme}`} style={{ position: 'relative' }}>
-      <Titlebar theme={theme} onToggleTheme={handleThemeToggle} />
+      <Titlebar
+        theme={theme}
+        onToggleTheme={handleThemeToggle}
+        ghostSelectionMode={settings.ghostSelectionMode || 'sentence'}
+        onGhostSelectionModeChange={(mode) => saveSetting('ghostSelectionMode', mode)}
+      />
       <div className={styles.body}>
         <Sidebar
           projects={projects}
