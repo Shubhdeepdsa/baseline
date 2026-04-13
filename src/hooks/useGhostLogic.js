@@ -3,41 +3,113 @@ import { useEmbeddings } from './useEmbeddings'
 import { cosineSimilarity, similarityToState, COVER_THRESHOLD } from '../utils/similarity'
 import { splitSentences, splitIntoGhostSentences } from '../utils/sentenceSplit'
 
-export function useGhostLogic(activeVersionContent) {
+export function useGhostLogic(activeVersionContent, removedSentenceIds = []) {
   const { embed, status: embedStatus } = useEmbeddings()
 
-  // Array of ghost sentence objects: { text, state, covered }
+  // Array of ghost sentence objects: { id, text, start, end, state, covered, removed }
   // state: 'dim' | 'yellow' | 'orange' | 'green'
   // covered: boolean — once true, the sentence fades out permanently
   const [ghosts, setGhosts] = useState([])
+  const [ghostSourceText, setGhostSourceText] = useState('')
 
   // Pre-computed embeddings for each ghost sentence
   const ghostEmbeddings = useRef([])
+  const removedIdSetRef = useRef(new Set())
+  const textEmbeddingCacheRef = useRef(new Map())
 
   const debounceTimer = useRef(null)
+  const ghostSentenceKey = ghosts.map(ghost => ghost.id).join('|')
 
-  // When the active version changes, split it into sentences and embed them all
+  const getTextEmbedding = useCallback(async (text) => {
+    const cached = textEmbeddingCacheRef.current.get(text)
+    if (cached) return cached
+
+    const embeddingPromise = embed(text).catch(error => {
+      textEmbeddingCacheRef.current.delete(text)
+      throw error
+    })
+
+    textEmbeddingCacheRef.current.set(text, embeddingPromise)
+    return embeddingPromise
+  }, [embed])
+
   useEffect(() => {
-    if (!activeVersionContent || embedStatus !== 'ready') return
+    removedIdSetRef.current = new Set(removedSentenceIds)
+    setGhosts(prev => {
+      let changed = false
+      const nextGhosts = prev.map(ghost => {
+        const removed = removedIdSetRef.current.has(ghost.id)
+        if (ghost.removed === removed) return ghost
+        changed = true
+        return { ...ghost, removed }
+      })
 
-    const sentences = splitIntoGhostSentences(activeVersionContent)
-    if (sentences.length === 0) return
+      return changed ? nextGhosts : prev
+    })
+  }, [removedSentenceIds])
+
+  // When the active version changes, split it immediately so the ghost pane stays usable
+  useEffect(() => {
+    if (!activeVersionContent) {
+      setGhosts([])
+      setGhostSourceText('')
+      ghostEmbeddings.current = []
+      return
+    }
+
+    const { normalizedText, sentences } = splitIntoGhostSentences(activeVersionContent)
+    if (sentences.length === 0) {
+      setGhosts([])
+      setGhostSourceText(normalizedText)
+      ghostEmbeddings.current = []
+      textEmbeddingCacheRef.current.clear()
+      return
+    }
+
+    setGhostSourceText(normalizedText)
 
     // Initialise ghost objects
-    setGhosts(sentences.map(text => ({ text, state: 'dim', covered: false })))
+    const removedIds = removedIdSetRef.current
+    setGhosts(sentences.map(sentence => ({
+      ...sentence,
+      state: 'dim',
+      covered: false,
+      removed: removedIds.has(sentence.id),
+    })))
+    ghostEmbeddings.current = []
+    textEmbeddingCacheRef.current.clear()
+  }, [activeVersionContent])
 
-    // Embed all ghost sentences up front (one-time cost per version)
-    Promise.all(sentences.map(s => embed(s))).then(embeddings => {
+  useEffect(() => {
+    if (embedStatus !== 'ready' || ghosts.length === 0) return
+
+    Promise.all(ghosts.map(ghost => getTextEmbedding(ghost.text))).then(embeddings => {
       ghostEmbeddings.current = embeddings
     })
-  }, [activeVersionContent, embedStatus])
+  }, [embedStatus, getTextEmbedding, ghostSentenceKey])
 
   // Called on every editor update — debounced to 300ms
   const processText = useCallback((fullText) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
 
     debounceTimer.current = setTimeout(async () => {
-      if (!fullText || ghostEmbeddings.current.length === 0) return
+      if (ghostEmbeddings.current.length === 0) return
+
+      if (!fullText) {
+        setGhosts(prev => {
+          let changed = false
+          const nextGhosts = prev.map(ghost => {
+            const removed = removedIdSetRef.current.has(ghost.id)
+            const nextState = ghost.covered ? ghost.state : 'dim'
+            if (ghost.removed === removed && ghost.state === nextState) return ghost
+            changed = true
+            return { ...ghost, removed, state: nextState }
+          })
+
+          return changed ? nextGhosts : prev
+        })
+        return
+      }
 
       const { completedSentences, currentSentence } = splitSentences(fullText)
 
@@ -45,7 +117,7 @@ export function useGhostLogic(activeVersionContent) {
       const newCovered = new Set()
       for (const sentence of completedSentences) {
         if (sentence.length < 8) continue
-        const emb = await embed(sentence)
+        const emb = await getTextEmbedding(sentence)
         ghostEmbeddings.current.forEach((ghostEmb, i) => {
           if (newCovered.has(i)) return
           const sim = cosineSimilarity(emb, ghostEmb)
@@ -58,39 +130,49 @@ export function useGhostLogic(activeVersionContent) {
       // Step 2: Current sentence → highlight matching ghosts
       let currentSims = []
       if (currentSentence.length >= 8) {
-        const currEmb = await embed(currentSentence)
-        currentSims = ghostEmbeddings.current.map((ghostEmb, i) => ({
-          i,
-          sim: cosineSimilarity(currEmb, ghostEmb),
-        }))
+        const currEmb = await getTextEmbedding(currentSentence)
+        currentSims = ghostEmbeddings.current.map(ghostEmb => cosineSimilarity(currEmb, ghostEmb))
       }
 
       // Determine if multiple ghosts are being combined
-      const aboveCombineThreshold = currentSims.filter(s => s.sim >= 0.30)
+      const aboveCombineThreshold = currentSims.filter(sim => sim >= 0.30)
       const isCombining = aboveCombineThreshold.length > 1
 
       // Step 3: Update ghost states
-      setGhosts(prev => prev.map((ghost, i) => {
-        // Already covered — stays covered
-        if (ghost.covered) return ghost
+      setGhosts(prev => {
+        let changed = false
+        const nextGhosts = prev.map((ghost, i) => {
+          const isRemoved = removedIdSetRef.current.has(ghost.id)
 
-        // Newly covered by completed sentence
-        if (newCovered.has(i)) return { ...ghost, covered: true, state: 'dim' }
+          if (ghost.covered) {
+            if (ghost.removed === isRemoved) return ghost
+            changed = true
+            return { ...ghost, removed: isRemoved }
+          }
 
-        // Not yet covered — determine highlight from current sentence
-        const simEntry = currentSims.find(s => s.i === i)
-        const sim = simEntry?.sim || 0
+          if (newCovered.has(i)) {
+            if (ghost.covered && ghost.removed === isRemoved && ghost.state === 'dim') return ghost
+            changed = true
+            return { ...ghost, covered: true, removed: isRemoved, state: 'dim' }
+          }
 
-        let state = similarityToState(sim)
+          const sim = currentSims[i] || 0
 
-        // If combining multiple sentences, cap at yellow to signal combination
-        if (isCombining && state === 'green') state = 'yellow'
-        if (isCombining && state === 'orange') state = 'yellow'
+          let state = similarityToState(sim)
 
-        return { ...ghost, state }
-      }))
+          if (isCombining && state === 'green') state = 'yellow'
+          if (isCombining && state === 'orange') state = 'yellow'
+
+          if (ghost.removed === isRemoved && ghost.state === state) return ghost
+
+          changed = true
+          return { ...ghost, removed: isRemoved, state }
+        })
+
+        return changed ? nextGhosts : prev
+      })
     }, 300)
-  }, [embed])
+  }, [getTextEmbedding])
 
-  return { ghosts, embedStatus, processText }
+  return { ghosts, ghostSourceText, embedStatus, processText }
 }

@@ -19,6 +19,9 @@ contextBridge.exposeInMainWorld('electron', {
   // Files
   readFile: (projectId, type, filename) => ipcRenderer.invoke('readFile', projectId, type, filename),
   saveFile: (projectId, type, content, filename) => ipcRenderer.invoke('saveFile', projectId, type, content, filename),
+  readGhostState: (projectId) => ipcRenderer.invoke('readGhostState', projectId),
+  saveGhostState: (projectId, state) => ipcRenderer.invoke('saveGhostState', projectId, state),
+  writeClipboardText: (text) => ipcRenderer.invoke('writeClipboardText', text),
 
   // AI Versions
   getVersions: (projectId) => ipcRenderer.invoke('getVersions', projectId),

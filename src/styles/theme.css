@@ -32,17 +32,30 @@ body {
   --accent:        #C9A84C;
   --accent-bg:     #C9A84C18;
   --accent-border: #C9A84C44;
-  --ghost-dim-text:  #2A2520;
-  --ghost-y-bg:      #5C4A1E22;
-  --ghost-y-text:    #6A5A2E;
-  --ghost-o-bg:      #6B3D1A22;
-  --ghost-o-text:    #7A4D2A;
-  --ghost-g-bg:      #1E4A2E33;
-  --ghost-g-text:    #2A6A4E;
+  --ghost-dim-text:  #8B857D;
+  --ghost-y-bg:      #7C632433;
+  --ghost-y-text:    #E8D28B;
+  --ghost-o-bg:      #7A482433;
+  --ghost-o-text:    #E6B18C;
+  --ghost-g-bg:      #22563A40;
+  --ghost-g-text:    #A6DFC0;
+  --ghost-highlight-text: #F6F1E8;
+  --ghost-highlight-shadow: #120F0C26;
   --logo-color:    #C9A84C;
   --status-dot:    #2A6A4E;
   --selection-bg:  #C9A84C;
   --selection-text:#0A0908;
+  --hl-amber-bg:   #b978184f;
+  --hl-coral-bg:   #bd5a3c52;
+  --hl-peach-bg:   #b97a5850;
+  --hl-lime-bg:    #78971f54;
+  --hl-mint-bg:    #2f8a5857;
+  --hl-teal-bg:    #2d86825a;
+  --hl-sky-bg:     #2d6e9e59;
+  --hl-cobalt-bg:  #396ace59;
+  --hl-violet-bg:  #775ec557;
+  --hl-rose-bg:    #b45d8554;
+  --hl-active-ring:#F5E7B0;
 }
 
 /* ─── LIGHT MODE ──────────────────────────────────────── */
@@ -59,17 +72,30 @@ body {
   --accent:        #8B6A1A;
   --accent-bg:     #8B6A1A12;
   --accent-border: #8B6A1A33;
-  --ghost-dim-text:  #C8C3BA;
-  --ghost-y-bg:      #F5E8C0;
-  --ghost-y-text:    #7A5A1A;
-  --ghost-o-bg:      #F5DCC0;
-  --ghost-o-text:    #7A3A1A;
-  --ghost-g-bg:      #C8E8D0;
-  --ghost-g-text:    #1A5A2E;
+  --ghost-dim-text:  #756B5E;
+  --ghost-y-bg:      #EED59A;
+  --ghost-y-text:    #5F4210;
+  --ghost-o-bg:      #E9BE96;
+  --ghost-o-text:    #5C2B11;
+  --ghost-g-bg:      #B7DEC0;
+  --ghost-g-text:    #18462B;
+  --ghost-highlight-text: #1F1A14;
+  --ghost-highlight-shadow: #FFFFFF7A;
   --logo-color:    #8B6A1A;
   --status-dot:    #1A5A2E;
   --selection-bg:  #8B6A1A;
   --selection-text:#1A1814;
+  --hl-amber-bg:   #f3d58d;
+  --hl-coral-bg:   #f2b8a6;
+  --hl-peach-bg:   #f4c8ad;
+  --hl-lime-bg:    #d8ec9a;
+  --hl-mint-bg:    #bce8c9;
+  --hl-teal-bg:    #b9e6df;
+  --hl-sky-bg:     #b9dbf5;
+  --hl-cobalt-bg:  #c6d5fb;
+  --hl-violet-bg:  #d7caf9;
+  --hl-rose-bg:    #f0c1d7;
+  --hl-active-ring:#7A5710;
 }
 
 ::selection {

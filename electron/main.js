@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, clipboard } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -27,6 +27,10 @@ function getBaseDir() {
 
 function getProjectDir(projectId) {
   return path.join(getBaseDir(), projectId)
+}
+
+function getGhostStatePath(projectId) {
+  return path.join(getProjectDir(projectId), 'ghost-state.json')
 }
 
 function ensureDir(dirPath) {
@@ -206,6 +210,33 @@ ipcMain.handle('saveFile', (_, projectId, type, content, filename = 'main.md') =
   } catch (err) {
     return { error: err.message }
   }
+})
+
+ipcMain.handle('readGhostState', (_, projectId) => {
+  const filePath = getGhostStatePath(projectId)
+
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'))
+  } catch {
+    return { versions: {} }
+  }
+})
+
+ipcMain.handle('saveGhostState', (_, projectId, state) => {
+  const projectDir = getProjectDir(projectId)
+  ensureDir(projectDir)
+
+  try {
+    fs.writeFileSync(getGhostStatePath(projectId), JSON.stringify(state, null, 2), 'utf8')
+    return { success: true }
+  } catch (err) {
+    return { error: err.message }
+  }
+})
+
+ipcMain.handle('writeClipboardText', (_, text) => {
+  clipboard.writeText(text || '')
+  return { success: true }
 })
 
 // Get all AI versions for a project — returns array of { filename, versionNumber, createdAt }
@@ -389,6 +420,12 @@ ipcMain.handle('getSettings', () => {
   return {
     baseDir: store.get('baseDir', path.join(app.getPath('home'), 'Baseline', 'projects')),
     theme: store.get('theme', 'dark'),
+    ghostBehavior: store.get('ghostBehavior', 'hide'),
+    ghostSelectionMode: store.get('ghostSelectionMode', 'sentence'),
+    ghostSplitOrientation: store.get('ghostSplitOrientation', 'horizontal'),
+    ghostSplitRatioHorizontal: store.get('ghostSplitRatioHorizontal', 0.62),
+    ghostSplitRatioVertical: store.get('ghostSplitRatioVertical', 0.58),
+    ghostRemovedVisibility: store.get('ghostRemovedVisibility', 'show'),
     lastProjectId: store.get('lastProjectId', null),
     lastTabId: store.get('lastTabId', 'writing'),
   }
@@ -398,6 +435,12 @@ ipcMain.handle('getSettings', () => {
 ipcMain.handle('saveSettings', (_, settings) => {
   if (settings.baseDir) store.set('baseDir', settings.baseDir)
   if (settings.theme) store.set('theme', settings.theme)
+  if (settings.ghostBehavior) store.set('ghostBehavior', settings.ghostBehavior)
+  if (settings.ghostSelectionMode) store.set('ghostSelectionMode', settings.ghostSelectionMode)
+  if (settings.ghostSplitOrientation) store.set('ghostSplitOrientation', settings.ghostSplitOrientation)
+  if (settings.ghostSplitRatioHorizontal !== undefined) store.set('ghostSplitRatioHorizontal', settings.ghostSplitRatioHorizontal)
+  if (settings.ghostSplitRatioVertical !== undefined) store.set('ghostSplitRatioVertical', settings.ghostSplitRatioVertical)
+  if (settings.ghostRemovedVisibility) store.set('ghostRemovedVisibility', settings.ghostRemovedVisibility)
   if (settings.lastProjectId !== undefined) store.set('lastProjectId', settings.lastProjectId)
   if (settings.lastTabId) store.set('lastTabId', settings.lastTabId)
   return { success: true }

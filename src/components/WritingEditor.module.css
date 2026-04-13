@@ -73,18 +73,59 @@
   background: var(--accent-bg);
 }
 
-.editorWrap {
+.splitView {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  overflow: hidden;
+}
+
+.splitHorizontal {
+  grid-template-rows:
+    minmax(0, calc(var(--pane-ratio) * (100% - var(--split-divider-size))))
+    var(--split-divider-size)
+    minmax(0, calc(var(--pane-ratio-inverse) * (100% - var(--split-divider-size))));
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.splitVertical {
+  grid-template-columns:
+    minmax(0, calc(var(--pane-ratio) * (100% - var(--split-divider-size))))
+    var(--split-divider-size)
+    minmax(0, calc(var(--pane-ratio-inverse) * (100% - var(--split-divider-size))));
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editorWrap {
+  height: 100%;
+  overflow: auto;
   position: relative;
   padding: 36px 48px 24px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg2) 55%, transparent), transparent 140px),
+    var(--bg);
+}
+
+.ghostPaneWrap {
+  border-top: 1px solid var(--border);
+}
+
+.splitVertical .ghostPaneWrap {
+  border-top: none;
+  border-left: 1px solid var(--border);
 }
 
 .editorWrapSmoothCaret :global(.ProseMirror) {
   caret-color: transparent;
 }
 
-/* TipTap editor styles */
 .editor {
   outline: none;
 }
@@ -97,6 +138,8 @@
   color: var(--text);
   caret-color: var(--accent);
   min-height: 200px;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .editorContent h1 {
@@ -121,7 +164,7 @@
   margin-bottom: 0;
 }
 
-.editorContent p+p {
+.editorContent p + p {
   margin-top: 8px;
 }
 
@@ -143,101 +186,69 @@
   height: 0;
 }
 
-/* Ghost text area */
-.ghostWrap {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border2);
-}
-
-.ghostPlaceholder {
-  font-family: 'Lora', 'Georgia', serif;
-  font-size: 14px;
-  color: var(--text3);
-  font-style: italic;
-}
-
-/* Legend */
-.legend {
+.divider {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  background: var(--bg2);
+  position: relative;
+  z-index: 2;
 }
 
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text2);
-}
-
-.legendBlock {
-  width: 12px;
+.dividerHorizontal {
   height: 12px;
-  border-radius: 3px;
+  cursor: row-resize;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
-.behaviorToggle {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  /* background: var(--bg3); */
-  padding: 2px;
-  border-radius: 6px;
-  /* border: 1px solid var(--border2); */
+.dividerVertical {
+  width: 12px;
+  cursor: col-resize;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
 
-.behaviorLabel {
-  font-size: 10px;
-  color: var(--text3);
-  margin-right: 4px;
-  margin-left: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.dividerGrip {
+  border-radius: 999px;
+  background: var(--border2);
 }
 
-.behaviorBtn {
-  background: transparent;
-  border: none;
-  color: var(--text2);
-  font-size: 10px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.dividerHorizontal .dividerGrip {
+  width: 62px;
+  height: 4px;
 }
 
-.behaviorBtn:hover {
-  background: var(--bg3);
-  color: var(--text1);
+.dividerVertical .dividerGrip {
+  width: 4px;
+  height: 62px;
 }
 
-.behaviorBtnActive {
-  background: var(--accent);
-  color: white;
-}
-
-/* Status bar */
 .statusBar {
-  height: 32px;
   background: var(--bg2);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  justify-content: space-between;
   gap: 12px;
+  padding: 8px 14px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.statusMeta,
+.statusControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .statusSep {
   width: 1px;
   height: 14px;
   background: var(--border2);
-}
-
-.statusSpacer {
-  flex: 1;
 }
 
 .statusItem {
@@ -263,4 +274,83 @@
   font-size: 9px;
   padding: 1px 5px;
   letter-spacing: 0.05em;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.legendBlock {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.behaviorToggle,
+.colorPicker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.behaviorLabel {
+  font-size: 10px;
+  color: var(--text3);
+  margin-right: 4px;
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.behaviorBtn {
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.behaviorBtn:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.behaviorBtnActive {
+  background: var(--accent);
+  color: white;
+}
+
+.colorSwatches {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.colorSwatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: var(--swatch-color);
+  cursor: pointer;
+}
+
+.colorSwatchActive {
+  outline: 2px solid var(--hl-active-ring);
+  outline-offset: 1px;
 }
