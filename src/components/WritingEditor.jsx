@@ -11,6 +11,11 @@ import GhostLayer from './GhostLayer'
 import SmoothCaret from './SmoothCaret'
 import { editorToMarkdown, markdownToHtml } from '../utils/tiptapMarkdown'
 
+function countWords(text) {
+  const trimmed = text.trim()
+  return trimmed ? trimmed.split(/\s+/).length : 0
+}
+
 // Toolbar button component
 function ToolBtn({ onClick, active, children, title }) {
   return (
@@ -55,8 +60,7 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
     },
     onUpdate: ({ editor }) => {
       const text = editor.getText()
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0
-      setWordCount(words)
+      setWordCount(countWords(text))
       setSaved(false)
 
       // Ghost text processing
@@ -85,6 +89,7 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
       } else {
         editor.commands.setContent('', false)
       }
+      setWordCount(countWords(editor.getText()))
       setSaved(true)
     })
   }, [projectId, editor])
@@ -211,7 +216,13 @@ export default function WritingEditor({ projectId, activeVersionContent }) {
       <div className={styles.statusBar}>
         <div className={styles.statusItem}>
           <div className={styles.statusDot} />
-          {coveredCount > 0 ? `${coveredCount} of ${ghosts.length} covered` : `${wordCount} words`}
+          {ghosts.length > 0 ? `${coveredCount} of ${ghosts.length} covered` : 'Ghost tracking idle'}
+        </div>
+
+        <div className={styles.statusSep} />
+
+        <div className={styles.statusItem}>
+          {wordCount} {wordCount === 1 ? 'word' : 'words'}
         </div>
 
         <div className={styles.statusSep} />
