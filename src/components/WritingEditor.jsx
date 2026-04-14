@@ -490,10 +490,8 @@ export default function WritingEditor({
                 styles.metricChipDotBurstiness,
                 styles[`metricChipDot${getBurstinessTone(burstinessScore).charAt(0).toUpperCase()}${getBurstinessTone(burstinessScore).slice(1)}`],
               )} />
-              <span className={styles.metricChipBody}>
-                <span className={styles.metricChipLabel}>Burstiness</span>
-                <span className={styles.metricChipValue}>{burstinessScore.toFixed(2)}</span>
-              </span>
+              <span className={styles.metricChipLabel}>Burstiness</span>
+              <span className={styles.metricChipValue}>{burstinessScore.toFixed(2)}</span>
             </div>
 
             <div className={styles.metricChip} title="Entropy. Higher is better and means word choice is more varied.">
@@ -502,10 +500,8 @@ export default function WritingEditor({
                 styles.metricChipDotEntropy,
                 styles[`metricChipDot${getEntropyTone(entropyScore).charAt(0).toUpperCase()}${getEntropyTone(entropyScore).slice(1)}`],
               )} />
-              <span className={styles.metricChipBody}>
-                <span className={styles.metricChipLabel}>Entropy</span>
-                <span className={styles.metricChipValue}>{entropyScore.toFixed(2)}</span>
-              </span>
+              <span className={styles.metricChipLabel}>Entropy</span>
+              <span className={styles.metricChipValue}>{entropyScore.toFixed(2)}</span>
             </div>
 
             <div className={styles.metricChip} title="Repeated n-grams. Lower is better and means fewer repeated phrases.">
@@ -514,41 +510,34 @@ export default function WritingEditor({
                 styles.metricChipDotNgram,
                 styles[`metricChipDot${getNgramTone(ngramCount).charAt(0).toUpperCase()}${getNgramTone(ngramCount).slice(1)}`],
               )} />
-              <span className={styles.metricChipBody}>
-                <span className={styles.metricChipLabel}>N-grams</span>
-                <span className={styles.metricChipValue}>{ngramCount}</span>
-              </span>
+              <span className={styles.metricChipLabel}>N-grams</span>
+              <span className={styles.metricChipValue}>{ngramCount}</span>
             </div>
 
             <div className={styles.hlsPanel} title="Human Likelihood Score. The meter fills from AI-like to strongly human-like.">
-              <div className={styles.hlsHeader}>
+              <div className={styles.hlsRow}>
                 <div className={styles.hlsTitle}>HLS</div>
+                <div className={joinClasses(
+                  styles.hlsMeter,
+                  styles[`hlsMeter${hlsTone.charAt(0).toUpperCase()}${hlsTone.slice(1)}`],
+                )} aria-hidden="true">
+                  <div className={styles.hlsMeterTrack} />
+                  <div
+                    className={styles.hlsMeterFill}
+                    style={{
+                      width: hlsFillWidth,
+                    }}
+                  />
+                  <span className={styles.hlsMarker} style={{ left: '35%' }} />
+                  <span className={styles.hlsMarker} style={{ left: '55%' }} />
+                  <span className={styles.hlsMarker} style={{ left: '75%' }} />
+                </div>
                 <div className={styles.hlsReadout}>
                   <span className={styles.hlsValue}>{hlsScore.toFixed(2)}</span>
                   <span className={styles.hlsLabel}>{hlsLabel}</span>
                 </div>
               </div>
-              <div className={joinClasses(
-                styles.hlsMeter,
-                styles[`hlsMeter${hlsTone.charAt(0).toUpperCase()}${hlsTone.slice(1)}`],
-              )} aria-hidden="true">
-                <div className={styles.hlsMeterTrack} />
-                <div
-                  className={styles.hlsMeterFill}
-                  style={{
-                    width: hlsFillWidth,
-                  }}
-                />
-                <span className={styles.hlsMarker} style={{ left: '35%' }} />
-                <span className={styles.hlsMarker} style={{ left: '55%' }} />
-                <span className={styles.hlsMarker} style={{ left: '75%' }} />
-              </div>
-              <div className={styles.hlsBands}>
-                <span className={styles.hlsBand}>AI-like</span>
-                <span className={styles.hlsBand}>Mixed</span>
-                <span className={styles.hlsBand}>Human-like</span>
-                <span className={styles.hlsBand}>Strongly human</span>
-              </div>
+                    
             </div>
           </div>
 

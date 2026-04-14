@@ -313,6 +313,7 @@
   border-radius: 999px;
   background: var(--bg3);
   border: 1px solid var(--border2);
+  white-space: nowrap;
 }
 
 .metricChipBody {
@@ -372,24 +373,41 @@
   border: 1px solid var(--border2);
 }
 
-.hlsHeader {
+.hlsRow {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 10px;
 }
 
 .hlsTitle {
+  flex-shrink: 0;
   font-size: 10px;
   color: var(--text3);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
+.hlsMeter {
+  position: relative;
+  flex: 1 1 auto;
+  height: 11px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  background:
+    linear-gradient(90deg,
+      rgba(239, 68, 68, 0.12) 0 35%,
+      rgba(245, 158, 11, 0.12) 35% 55%,
+      rgba(34, 197, 94, 0.12) 55% 75%,
+      rgba(20, 184, 166, 0.12) 75% 100%);
+}
+
 .hlsReadout {
+  min-width: 78px;
   display: flex;
   align-items: baseline;
   gap: 6px;
+  justify-content: flex-end;
 }
 
 .hlsValue {
@@ -401,20 +419,6 @@
 .hlsLabel {
   font-size: 10px;
   color: var(--text2);
-}
-
-.hlsMeter {
-  position: relative;
-  height: 11px;
-  border-radius: 999px;
-  overflow: hidden;
-  border: 1px solid var(--border2);
-  background:
-    linear-gradient(90deg,
-      rgba(239, 68, 68, 0.12) 0 35%,
-      rgba(245, 158, 11, 0.12) 35% 55%,
-      rgba(34, 197, 94, 0.12) 55% 75%,
-      rgba(20, 184, 166, 0.12) 75% 100%);
 }
 
 .hlsMeterTrack {
@@ -484,6 +488,7 @@
   font-size: 9px;
   line-height: 1.1;
   color: var(--text3);
+  padding-left: 34px;
 }
 
 .hlsBand {
