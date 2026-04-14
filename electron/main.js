@@ -61,8 +61,79 @@ function filenameToName(filename) {
 function rewriteWikiLinks(content, fromFilename, toName) {
   const fromSlug = fromFilename.replace(/\.md$/, '')
 
-  return content.replace(/\[\[([^[\]]+?)\]\]/g, (match, label) => {
+  return content.replace(/\[\[([^\[\]]+?)\]\]/g, (match, label) => {
     return slugifyName(label) === fromSlug ? `[[${toName}]]` : match
+  })
+}
+
+function getWritingDocsDir(projectId) {
+  return path.join(getProjectDir(projectId), 'writing-docs')
+}
+
+function ensureWritingDocs(projectId) {
+  const docsDir = getWritingDocsDir(projectId)
+  ensureDir(docsDir)
+
+  const mainPath = path.join(docsDir, 'main.md')
+  if (!fs.existsSync(mainPath)) {
+    const legacyPath = path.join(getProjectDir(projectId), 'writing.md')
+    if (fs.existsSync(legacyPath)) {
+      try {
+        fs.copyFileSync(legacyPath, mainPath)
+      } catch (err) {
+        console.error('Failed to migrate writing.md to multi-doc folder:', err)
+        fs.writeFileSync(mainPath, '', 'utf8')
+      }
+    } else {
+      fs.writeFileSync(mainPath, '', 'utf8')
+    }
+  }
+
+  return docsDir
+}
+
+function safeWritingFilename(filename) {
+  const base = filename ? path.basename(filename) : 'main.md'
+  return base.endsWith('.md') ? base : `${base}.md`
+}
+
+function resolveWritingDocPath(projectId, filename = 'main.md') {
+  const docsDir = ensureWritingDocs(projectId)
+  const safeName = safeWritingFilename(filename)
+  return path.join(docsDir, safeName)
+}
+
+function readDocPreview(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8')
+    if (!content) return ''
+    const normalized = content.replace(/\s+/g, ' ').trim()
+    const slice = normalized.slice(0, 180)
+    return slice.length === normalized.length ? slice : `${slice.trim()}…`
+  } catch {
+    return ''
+  }
+}
+
+function listWritingDocs(projectId) {
+  const docsDir = ensureWritingDocs(projectId)
+  const files = fs.readdirSync(docsDir)
+    .filter(file => file.endsWith('.md'))
+    .sort((a, b) => {
+      if (a === 'main.md') return -1
+      if (b === 'main.md') return 1
+      return a.localeCompare(b)
+    })
+
+  return files.map(filename => {
+    const filePath = path.join(docsDir, filename)
+    const stat = fs.statSync(filePath)
+    return {
+      filename,
+      name: filenameToName(filename),
+      preview: readDocPreview(filePath),
+      updatedAt: stat.mtime.toISOString(),
+    }
   })
 }
 
@@ -84,12 +155,18 @@ ipcMain.handle('getProjects', () => {
     .filter(e => e.isDirectory())
     .map(e => {
       const projectDir = path.join(baseDir, e.name)
-      const writingPath = path.join(projectDir, 'writing.md')
+      const writingPath = path.join(projectDir, 'writing-docs', 'main.md')
       let modifiedAt = null
-      try {
+      if (fs.existsSync(writingPath)) {
         const stat = fs.statSync(writingPath)
         modifiedAt = stat.mtime.toISOString()
-      } catch {}
+      } else {
+        const legacyPath = path.join(projectDir, 'writing.md')
+        try {
+          const stat = fs.statSync(legacyPath)
+          modifiedAt = stat.mtime.toISOString()
+        } catch {}
+      }
       return {
         id: e.name,
         name: e.name.replace(/-/g, ' '),
@@ -118,6 +195,7 @@ ipcMain.handle('createProject', (_, name) => {
   ensureDir(path.join(projectDir, 'ai-versions'))
   ensureDir(path.join(projectDir, 'brain-dumps'))
   ensureDir(path.join(projectDir, 'exports'))
+  ensureWritingDocs(id)
 
   fs.writeFileSync(path.join(projectDir, 'brain-dumps', 'main.md'), '', 'utf8')
   fs.writeFileSync(path.join(projectDir, 'writing.md'), '', 'utf8')
@@ -173,7 +251,7 @@ ipcMain.handle('readFile', (_, projectId, type, filename = 'main.md') => {
     
     filePath = path.join(dumpsDir, filename)
   } else if (type === 'writing') {
-    filePath = path.join(projectDir, 'writing.md')
+    filePath = resolveWritingDocPath(projectId, filename)
   } else if (type === 'active-braindump') {
     filePath = path.join(projectDir, 'active-braindump.txt')
   } else {
@@ -197,7 +275,15 @@ ipcMain.handle('saveFile', (_, projectId, type, content, filename = 'main.md') =
     ensureDir(dumpsDir)
     filePath = path.join(dumpsDir, filename)
   } else if (type === 'writing') {
-    filePath = path.join(projectDir, 'writing.md')
+    filePath = resolveWritingDocPath(projectId, filename)
+    if (safeWritingFilename(filename) === 'main.md') {
+      const legacyPath = path.join(projectDir, 'writing.md')
+      try {
+        fs.writeFileSync(legacyPath, content, 'utf8')
+      } catch (err) {
+        console.error('Failed to update legacy writing.md:', err)
+      }
+    }
   } else if (type === 'active-braindump') {
     filePath = path.join(projectDir, 'active-braindump.txt')
   } else {
@@ -209,6 +295,62 @@ ipcMain.handle('saveFile', (_, projectId, type, content, filename = 'main.md') =
     return { success: true }
   } catch (err) {
     return { error: err.message }
+  }
+})
+
+ipcMain.handle('getWritingDocs', (_, projectId) => {
+  return listWritingDocs(projectId)
+})
+
+ipcMain.handle('createWritingDoc', (_, projectId, name = 'New document') => {
+  const slug = slugifyName(name) || `doc-${getTimestamp()}`
+  const filename = `${slug}.md`
+  const docsDir = ensureWritingDocs(projectId)
+  const filePath = path.join(docsDir, filename)
+
+  if (fs.existsSync(filePath)) {
+    return { error: 'A document with this name already exists.' }
+  }
+
+  fs.writeFileSync(filePath, '', 'utf8')
+  return {
+    filename,
+    name: filenameToName(filename),
+    preview: '',
+    updatedAt: new Date().toISOString(),
+  }
+})
+
+ipcMain.handle('renameWritingDoc', (_, projectId, oldFilename, requestedName) => {
+  if (!projectId || !oldFilename) {
+    return { error: 'Missing document information.' }
+  }
+
+  const docsDir = ensureWritingDocs(projectId)
+  const oldPath = path.join(docsDir, oldFilename)
+  if (!fs.existsSync(oldPath)) {
+    return { error: 'Document not found.' }
+  }
+
+  const slug = slugifyName(requestedName) || `doc-${getTimestamp()}`
+  const slugFilename = `${slug}.md`
+  const normalizedFilename = safeWritingFilename(slugFilename)
+  const newPath = path.join(docsDir, normalizedFilename)
+
+  if (fs.existsSync(newPath) && normalizedFilename !== oldFilename) {
+    return { error: 'A document with this name already exists.' }
+  }
+
+  if (normalizedFilename !== oldFilename) {
+    fs.renameSync(oldPath, newPath)
+  }
+
+  const stat = fs.statSync(newPath)
+  return {
+    filename: normalizedFilename,
+    name: filenameToName(normalizedFilename),
+    preview: readDocPreview(newPath),
+    updatedAt: stat.mtime.toISOString(),
   }
 })
 

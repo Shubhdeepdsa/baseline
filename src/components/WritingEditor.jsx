@@ -98,7 +98,9 @@ export default function WritingEditor({
   activeVersionFilename, 
   activeVersionContent,
   settings,
-  saveSetting
+  saveSetting,
+  activeDocument,
+  focusKey = 0,
 }) {
   const [wordCount, setWordCount] = useState(0)
   const [saved, setSaved] = useState(true)
@@ -159,7 +161,8 @@ export default function WritingEditor({
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
       saveTimerRef.current = setTimeout(() => {
         const markdown = editorToMarkdown(nextEditor)
-        window.electron.saveFile(projectId, 'writing', markdown)
+        const filename = activeDocument?.filename ?? 'main.md'
+        window.electron.saveFile(projectId, 'writing', markdown, filename)
         setSaved(true)
       }, 2000)
     },
@@ -241,7 +244,9 @@ export default function WritingEditor({
   useEffect(() => {
     if (!editor || !projectId) return
 
-    window.electron.readFile(projectId, 'writing').then(result => {
+    const filename = activeDocument?.filename ?? 'main.md'
+
+    window.electron.readFile(projectId, 'writing', filename).then(result => {
       let loadedText = ''
       if (result.content) {
         editor.commands.setContent(markdownToHtml(result.content), false)
@@ -257,7 +262,12 @@ export default function WritingEditor({
       setSaved(true)
       processText(editor.getText())
     })
-  }, [editor, projectId])
+  }, [editor, projectId, activeDocument])
+
+  useEffect(() => {
+    if (!editor) return
+    editor.commands.focus('end')
+  }, [editor, focusKey])
 
   useEffect(() => {
     if (!editor) return

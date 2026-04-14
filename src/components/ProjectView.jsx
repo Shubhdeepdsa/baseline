@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import styles from './ProjectView.module.css'
 import BrainDumpEditor from './BrainDumpEditor'
 import AIVersionPanel from './AIVersionPanel'
-import WritingEditor from './WritingEditor'
+import WritingWorkspace from './WritingWorkspace'
 import { useSettings } from '../hooks/useSettings'
 
 import SettingsContent from './SettingsContent'
@@ -127,7 +127,7 @@ export default function ProjectView({ projectId, showSettingsTab, onCloseSetting
           />
         )}
         {activeTab === 'writing' && projectId && (
-          <WritingEditor
+          <WritingWorkspace
             projectId={projectId}
             activeVersionFilename={activeVersionFilename}
             activeVersionContent={activeVersionContent}

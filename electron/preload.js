@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('electron', {
   readGhostState: (projectId) => ipcRenderer.invoke('readGhostState', projectId),
   saveGhostState: (projectId, state) => ipcRenderer.invoke('saveGhostState', projectId, state),
   writeClipboardText: (text) => ipcRenderer.invoke('writeClipboardText', text),
+  getWritingDocs: (projectId) => ipcRenderer.invoke('getWritingDocs', projectId),
+  createWritingDoc: (projectId, name) => ipcRenderer.invoke('createWritingDoc', projectId, name),
+  renameWritingDoc: (projectId, filename, name) => ipcRenderer.invoke('renameWritingDoc', projectId, filename, name),
 
   // AI Versions
   getVersions: (projectId) => ipcRenderer.invoke('getVersions', projectId),
