@@ -36,6 +36,22 @@ function shannonEntropy(frequencies, total) {
   return entropy
 }
 
+function getHumanLikelihoodBand(score) {
+  if (score < 0.35) {
+    return { key: 'ai-like', label: 'AI-like' }
+  }
+
+  if (score < 0.55) {
+    return { key: 'mixed', label: 'Mixed' }
+  }
+
+  if (score < 0.75) {
+    return { key: 'human-like', label: 'Human-like' }
+  }
+
+  return { key: 'strongly-human', label: 'Strongly human' }
+}
+
 export function tokenizeWithRanges(text) {
   const tokens = []
   WORD_TOKEN_REGEX.lastIndex = 0
@@ -149,6 +165,31 @@ function createTokenFrequency(tokens) {
   })
 
   return { frequencies, occurrences }
+}
+
+function buildTrigramRepetitionStats(tokens) {
+  const tokenTexts = tokens.map(token => token.lower)
+  const totalTrigrams = Math.max(0, tokenTexts.length - 2)
+  if (totalTrigrams === 0) {
+    return {
+      totalTrigrams,
+      repeatedTrigramCount: 0,
+      repeatedTrigramRatio: 0,
+    }
+  }
+
+  const counts = new Map()
+  for (let index = 0; index <= tokenTexts.length - 3; index += 1) {
+    const phrase = tokenTexts.slice(index, index + 3).join(' ')
+    counts.set(phrase, (counts.get(phrase) || 0) + 1)
+  }
+
+  const repeatedTrigramCount = [...counts.values()].filter(count => count > 1).length
+  return {
+    totalTrigrams,
+    repeatedTrigramCount,
+    repeatedTrigramRatio: repeatedTrigramCount / totalTrigrams,
+  }
 }
 
 function buildBurstinessHighlights(sentenceRanges, sentenceLengths) {
@@ -283,6 +324,7 @@ export function analyzeWritingMetrics(text) {
     const tokens = normalizedText ? tokenizeWithRanges(normalizedText) : []
     const sentenceLengths = sentenceRanges.map(sentence => tokenizeWithRanges(sentence.text).length)
     const tokenFrequencies = new Map()
+    const trigramStats = buildTrigramRepetitionStats(tokens)
 
     tokens.forEach(token => {
       tokenFrequencies.set(token.lower, (tokenFrequencies.get(token.lower) || 0) + 1)
@@ -299,13 +341,19 @@ export function analyzeWritingMetrics(text) {
       : 0
     const burstinessStdDev = standardDeviation(sentenceLengths)
     const burstinessMean = mean(sentenceLengths)
-    const burstinessCoefficient = burstinessMean > 0
-      ? burstinessStdDev / burstinessMean
+    const burstinessCoefficient = (burstinessStdDev + burstinessMean) > 0
+      ? (burstinessStdDev - burstinessMean) / (burstinessStdDev + burstinessMean)
       : 0
+    const normalizedBurstiness = clamp((burstinessCoefficient + 1) / 2, 0, 1)
 
     const burstinessHighlights = buildBurstinessHighlights(sentenceRanges, sentenceLengths)
     const ngramResult = buildRepeatedNGramHighlights(tokens)
     const entropyHighlights = buildEntropyHighlights(tokens).candidates
+    const normalizedNgramScore = clamp(1 - trigramStats.repeatedTrigramRatio, 0, 1)
+    const hlsScore = Math.pow(normalizedBurstiness, 0.5)
+      * Math.pow(normalizedEntropy, 0.3)
+      * Math.pow(normalizedNgramScore, 0.2)
+    const hlsBand = getHumanLikelihoodBand(hlsScore)
 
     return {
       text: normalizedText,
@@ -316,16 +364,29 @@ export function analyzeWritingMetrics(text) {
         burstiness: {
           meanSentenceLength: burstinessMean,
           stdDevSentenceLength: burstinessStdDev,
+          gohBarabasiCoefficient: burstinessCoefficient,
           coefficientOfVariation: burstinessCoefficient,
+          normalizedScore: normalizedBurstiness,
         },
         ngrams: {
           repeatedPhraseCount: ngramResult.repeatedPhraseCount,
           repeatedOccurrenceCount: ngramResult.candidates.length,
+          repeatedTrigramCount: trigramStats.repeatedTrigramCount,
+          repeatedTrigramRatio: trigramStats.repeatedTrigramRatio,
+          normalizedScore: normalizedNgramScore,
         },
         entropy: {
           shannonBits: entropy,
           normalizedEntropy,
           typeTokenRatio,
+          normalizedScore: normalizedEntropy,
+        },
+        hls: {
+          score: hlsScore,
+          band: hlsBand,
+          normalizedBurstiness,
+          normalizedEntropy,
+          normalizedNgramScore,
         },
       },
       highlights: [
@@ -344,16 +405,29 @@ export function analyzeWritingMetrics(text) {
         burstiness: {
           meanSentenceLength: 0,
           stdDevSentenceLength: 0,
+          gohBarabasiCoefficient: 0,
           coefficientOfVariation: 0,
+          normalizedScore: 0,
         },
         ngrams: {
           repeatedPhraseCount: 0,
           repeatedOccurrenceCount: 0,
+          repeatedTrigramCount: 0,
+          repeatedTrigramRatio: 0,
+          normalizedScore: 0,
         },
         entropy: {
           shannonBits: 0,
           normalizedEntropy: 0,
           typeTokenRatio: 0,
+          normalizedScore: 0,
+        },
+        hls: {
+          score: 0,
+          band: getHumanLikelihoodBand(0),
+          normalizedBurstiness: 0,
+          normalizedEntropy: 0,
+          normalizedNgramScore: 0,
         },
       },
       highlights: [],

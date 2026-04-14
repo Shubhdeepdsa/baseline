@@ -27,6 +27,48 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
 }
 
+function joinClasses(...classes) {
+  return classes.filter(Boolean).join(' ')
+}
+
+function getBandTone(value, thresholds, reverse = false) {
+  if (reverse) {
+    if (value <= thresholds[0]) return 'good'
+    if (value <= thresholds[1]) return 'warning'
+    return 'bad'
+  }
+
+  if (value < thresholds[0]) return 'bad'
+  if (value < thresholds[1]) return 'warning'
+  return 'good'
+}
+
+function getBurstinessTone(value) {
+  return getBandTone(value, [0.4, 0.65])
+}
+
+function getEntropyTone(value) {
+  return getBandTone(value, [0.6, 0.8])
+}
+
+function getNgramTone(value) {
+  return getBandTone(value, [3, 6], true)
+}
+
+function getHlsTone(value) {
+  if (value < 0.35) return 'bad'
+  if (value < 0.55) return 'warning'
+  if (value < 0.75) return 'good'
+  return 'strong'
+}
+
+function getHlsLabel(value) {
+  if (value < 0.35) return 'AI-like'
+  if (value < 0.55) return 'Mixed'
+  if (value < 0.75) return 'Human-like'
+  return 'Strongly human'
+}
+
 const SPLIT_DIVIDER_SIZE = 12
 
 function getEmptyVersionState() {
@@ -309,6 +351,14 @@ export default function WritingEditor({
     }
   }
 
+  const burstinessScore = writingMetrics.summary.burstiness.normalizedScore ?? 0
+  const entropyScore = writingMetrics.summary.entropy.normalizedScore ?? 0
+  const ngramCount = writingMetrics.summary.ngrams.repeatedPhraseCount ?? 0
+  const hlsScore = writingMetrics.summary.hls.score ?? 0
+  const hlsLabel = writingMetrics.summary.hls.band?.label || getHlsLabel(hlsScore)
+  const hlsTone = getHlsTone(hlsScore)
+  const hlsFillWidth = `${clamp(hlsScore, 0, 1) * 100}%`
+
   if (!editor) return null
 
   return (
@@ -434,25 +484,71 @@ export default function WritingEditor({
               Metrics view
             </button>
 
-            <div className={styles.metricChip} title="Sentence-length variance. Higher = more bursty pacing.">
-              <span className={styles.metricChipLabel}>Burstiness</span>
-              <span className={styles.metricChipValue}>
-                {writingMetrics.summary.burstiness.coefficientOfVariation.toFixed(2)}
+            <div className={styles.metricChip} title="Burstiness. Higher is better and means sentence lengths vary more naturally.">
+              <span className={joinClasses(
+                styles.metricChipDot,
+                styles.metricChipDotBurstiness,
+                styles[`metricChipDot${getBurstinessTone(burstinessScore).charAt(0).toUpperCase()}${getBurstinessTone(burstinessScore).slice(1)}`],
+              )} />
+              <span className={styles.metricChipBody}>
+                <span className={styles.metricChipLabel}>Burstiness</span>
+                <span className={styles.metricChipValue}>{burstinessScore.toFixed(2)}</span>
               </span>
             </div>
 
-            <div className={styles.metricChip} title="Repeated 3- and 4-word phrases. Higher = more recurrence.">
-              <span className={styles.metricChipLabel}>N-grams</span>
-              <span className={styles.metricChipValue}>
-                {writingMetrics.summary.ngrams.repeatedPhraseCount}
+            <div className={styles.metricChip} title="Entropy. Higher is better and means word choice is more varied.">
+              <span className={joinClasses(
+                styles.metricChipDot,
+                styles.metricChipDotEntropy,
+                styles[`metricChipDot${getEntropyTone(entropyScore).charAt(0).toUpperCase()}${getEntropyTone(entropyScore).slice(1)}`],
+              )} />
+              <span className={styles.metricChipBody}>
+                <span className={styles.metricChipLabel}>Entropy</span>
+                <span className={styles.metricChipValue}>{entropyScore.toFixed(2)}</span>
               </span>
             </div>
 
-            <div className={styles.metricChip} title="Shannon entropy over word choice. Lower = more repetitive vocabulary.">
-              <span className={styles.metricChipLabel}>Entropy</span>
-              <span className={styles.metricChipValue}>
-                {writingMetrics.summary.entropy.normalizedEntropy.toFixed(2)}
+            <div className={styles.metricChip} title="Repeated n-grams. Lower is better and means fewer repeated phrases.">
+              <span className={joinClasses(
+                styles.metricChipDot,
+                styles.metricChipDotNgram,
+                styles[`metricChipDot${getNgramTone(ngramCount).charAt(0).toUpperCase()}${getNgramTone(ngramCount).slice(1)}`],
+              )} />
+              <span className={styles.metricChipBody}>
+                <span className={styles.metricChipLabel}>N-grams</span>
+                <span className={styles.metricChipValue}>{ngramCount}</span>
               </span>
+            </div>
+
+            <div className={styles.hlsPanel} title="Human Likelihood Score. The meter fills from AI-like to strongly human-like.">
+              <div className={styles.hlsHeader}>
+                <div className={styles.hlsTitle}>HLS</div>
+                <div className={styles.hlsReadout}>
+                  <span className={styles.hlsValue}>{hlsScore.toFixed(2)}</span>
+                  <span className={styles.hlsLabel}>{hlsLabel}</span>
+                </div>
+              </div>
+              <div className={joinClasses(
+                styles.hlsMeter,
+                styles[`hlsMeter${hlsTone.charAt(0).toUpperCase()}${hlsTone.slice(1)}`],
+              )} aria-hidden="true">
+                <div className={styles.hlsMeterTrack} />
+                <div
+                  className={styles.hlsMeterFill}
+                  style={{
+                    width: hlsFillWidth,
+                  }}
+                />
+                <span className={styles.hlsMarker} style={{ left: '35%' }} />
+                <span className={styles.hlsMarker} style={{ left: '55%' }} />
+                <span className={styles.hlsMarker} style={{ left: '75%' }} />
+              </div>
+              <div className={styles.hlsBands}>
+                <span className={styles.hlsBand}>AI-like</span>
+                <span className={styles.hlsBand}>Mixed</span>
+                <span className={styles.hlsBand}>Human-like</span>
+                <span className={styles.hlsBand}>Strongly human</span>
+              </div>
             </div>
           </div>
 
