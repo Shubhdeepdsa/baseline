@@ -4,16 +4,23 @@ import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
 import { GhostIntellisense } from '../extensions/GhostIntellisense'
+import { WritingMetricsHighlighter } from '../extensions/WritingMetricsHighlighter'
 import styles from './WritingEditor.module.css'
 import { useGhostLogic } from '../hooks/useGhostLogic'
 import { useSmoothCaret } from '../hooks/useSmoothCaret'
 import GhostPane from './GhostPane'
 import SmoothCaret from './SmoothCaret'
 import { editorToMarkdown, markdownToHtml } from '../utils/tiptapMarkdown'
+import { analyzeWritingMetrics } from '../utils/writingMetrics'
 
 function countWords(text) {
   const trimmed = text.trim()
   return trimmed ? trimmed.split(/\s+/).length : 0
+}
+
+function getTipTapText(editor) {
+  if (!editor) return ''
+  return editor.state.doc.textBetween(0, editor.state.doc.content.size, ' ')
 }
 
 function clamp(value, min, max) {
@@ -54,6 +61,8 @@ export default function WritingEditor({
   const [wordCount, setWordCount] = useState(0)
   const [saved, setSaved] = useState(true)
   const [ghostState, setGhostState] = useState({ versions: {} })
+  const [writingMetrics, setWritingMetrics] = useState(() => analyzeWritingMetrics(''))
+  const [metricsViewEnabled, setMetricsViewEnabled] = useState(false)
   const [paneRatio, setPaneRatio] = useState(0.62)
   const saveTimerRef = useRef(null)
   const paneRatioRef = useRef(0.62)
@@ -85,6 +94,7 @@ export default function WritingEditor({
       }),
       Underline,
       GhostIntellisense,
+      WritingMetricsHighlighter,
       Placeholder.configure({
         placeholder: 'Start writing here...',
       }),
@@ -97,10 +107,12 @@ export default function WritingEditor({
       },
     },
     onUpdate: ({ editor: nextEditor }) => {
-      const text = nextEditor.getText()
+      const text = getTipTapText(nextEditor)
+      const nextMetrics = analyzeWritingMetrics(text)
       setWordCount(countWords(text))
+      setWritingMetrics(nextMetrics)
       setSaved(false)
-      processText(text)
+      processText(nextEditor.getText())
 
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
       saveTimerRef.current = setTimeout(() => {
@@ -115,9 +127,23 @@ export default function WritingEditor({
 
   useEffect(() => {
     if (editor && !editor.isDestroyed) {
+      if (settings.enableIntellisense === false) {
+        editor.commands.setGhostSuggestion('')
+        return
+      }
+
       editor.commands.setGhostSuggestion(suggestion)
     }
-  }, [editor, suggestion])
+  }, [editor, suggestion, settings.enableIntellisense])
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return
+
+    editor.commands.setWritingMetrics({
+      enabled: metricsViewEnabled,
+      analysis: writingMetrics,
+    })
+  }, [editor, metricsViewEnabled, writingMetrics])
 
   const persistGhostState = useCallback((nextState) => {
     if (!projectId) return
@@ -174,16 +200,20 @@ export default function WritingEditor({
     if (!editor || !projectId) return
 
     window.electron.readFile(projectId, 'writing').then(result => {
+      let loadedText = ''
       if (result.content) {
         editor.commands.setContent(markdownToHtml(result.content), false)
+        loadedText = getTipTapText(editor)
       } else {
         editor.commands.setContent('', false)
+        loadedText = ''
       }
 
-      const text = editor.getText()
-      setWordCount(countWords(text))
+      const nextMetrics = analyzeWritingMetrics(loadedText)
+      setWordCount(countWords(loadedText))
+      setWritingMetrics(nextMetrics)
       setSaved(true)
-      processText(text)
+      processText(editor.getText())
     })
   }, [editor, projectId])
 
@@ -393,6 +423,56 @@ export default function WritingEditor({
 
       <div className={styles.statusBar}>
         <div className={styles.statusMeta}>
+          <div className={styles.metricsPanel}>
+            <button
+              type="button"
+              className={`${styles.metricsToggle} ${metricsViewEnabled ? styles.metricsToggleActive : ''}`}
+              onClick={() => setMetricsViewEnabled(enabled => !enabled)}
+              aria-pressed={metricsViewEnabled}
+              title="Toggle live metric highlights for the main writer"
+            >
+              Metrics view
+            </button>
+
+            <div className={styles.metricChip} title="Sentence-length variance. Higher = more bursty pacing.">
+              <span className={styles.metricChipLabel}>Burstiness</span>
+              <span className={styles.metricChipValue}>
+                {writingMetrics.summary.burstiness.coefficientOfVariation.toFixed(2)}
+              </span>
+            </div>
+
+            <div className={styles.metricChip} title="Repeated 3- and 4-word phrases. Higher = more recurrence.">
+              <span className={styles.metricChipLabel}>N-grams</span>
+              <span className={styles.metricChipValue}>
+                {writingMetrics.summary.ngrams.repeatedPhraseCount}
+              </span>
+            </div>
+
+            <div className={styles.metricChip} title="Shannon entropy over word choice. Lower = more repetitive vocabulary.">
+              <span className={styles.metricChipLabel}>Entropy</span>
+              <span className={styles.metricChipValue}>
+                {writingMetrics.summary.entropy.normalizedEntropy.toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          {metricsViewEnabled && (
+            <div className={styles.metricsLegend} aria-label="Metrics highlight legend">
+              <div className={styles.metricsLegendItem} title="Burstiness highlights sentences that differ from the document's average length.">
+                <span className={`${styles.metricsLegendSwatch} ${styles.metricsLegendBurstiness}`} />
+                <span className={styles.metricsLegendText}>Burstiness: sentence-length variance</span>
+              </div>
+              <div className={styles.metricsLegendItem} title="N-gram highlights repeated 3- and 4-word phrases in the text.">
+                <span className={`${styles.metricsLegendSwatch} ${styles.metricsLegendNgram}`} />
+                <span className={styles.metricsLegendText}>N-grams: repeated phrases</span>
+              </div>
+              <div className={styles.metricsLegendItem} title="Entropy highlights repeated words that lower vocabulary diversity.">
+                <span className={`${styles.metricsLegendSwatch} ${styles.metricsLegendEntropy}`} />
+                <span className={styles.metricsLegendText}>Entropy: low vocabulary diversity</span>
+              </div>
+            </div>
+          )}
+
           {settings.enableMiniLM !== false && (
             <>
               <div className={styles.statusItem}>

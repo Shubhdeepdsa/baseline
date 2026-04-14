@@ -186,6 +186,37 @@
   height: 0;
 }
 
+:global(.writingMetricRange) {
+  border-radius: 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+:global(.writingMetricRangeBurstiness) {
+  background: var(--writing-metric-fill);
+  box-shadow: inset 0 -2px 0 var(--writing-metric-accent);
+}
+
+:global(.writingMetricRangeBurstiness-short) {
+  background: var(--writing-metric-fill);
+  box-shadow: inset 0 -2px 0 var(--writing-metric-accent);
+}
+
+:global(.writingMetricRangeBurstiness-long) {
+  background: var(--writing-metric-fill);
+  box-shadow: inset 0 -2px 0 var(--writing-metric-accent);
+}
+
+:global(.writingMetricRangeNgram) {
+  background: var(--writing-metric-fill);
+  box-shadow: inset 0 -1px 0 var(--writing-metric-accent);
+}
+
+:global(.writingMetricRangeEntropy) {
+  background: var(--writing-metric-fill);
+  box-shadow: inset 0 0 0 1px var(--writing-metric-accent);
+}
+
 .divider {
   flex-shrink: 0;
   display: flex;
@@ -239,6 +270,105 @@
   align-items: center;
   gap: 12px;
   width: 100%;
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.metricsPanel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-right: 4px;
+}
+
+.metricsToggle {
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  color: var(--text2);
+  font-size: 10px;
+  padding: 4px 9px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.metricsToggle:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.metricsToggleActive {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.metricChip {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+}
+
+.metricChipLabel {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.metricChipValue {
+  font-size: 11px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.metricsLegend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-right: 6px;
+}
+
+.metricsLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+}
+
+.metricsLegendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.metricsLegendBurstiness {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(245, 158, 11, 0.8));
+}
+
+.metricsLegendNgram {
+  background: rgba(34, 197, 94, 0.82);
+}
+
+.metricsLegendEntropy {
+  background: rgba(236, 72, 153, 0.82);
+}
+
+.metricsLegendText {
+  font-size: 10px;
+  color: var(--text2);
+  white-space: nowrap;
 }
 
 .statusSep {

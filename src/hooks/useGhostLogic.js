@@ -94,16 +94,20 @@ export function useGhostLogic(activeVersionContent, removedSentenceIds = [], set
 
   // Called on every editor update — debounced to 300ms
   const processText = useCallback((fullText) => {
-    if (!enableMiniLM) {
-       // If matching is disabled, we don't process similarity.
-       // We can optionally still do intellisense, but let's clear it just in case
-       if (suggestion) setSuggestion('')
-       return
-    }
-
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
 
     debounceTimer.current = setTimeout(async () => {
+      const bestSuggestion =
+        enableIntellisense && fullText.trim().length >= 1 && activeVersionContent
+          ? getWordSuggestion(fullText, activeVersionContent)
+          : ''
+
+      // Keep the suggestion path independent from MiniLM so intellisense still
+      // works in the "basic editor" / no-embedding configuration.
+      setTimeout(() => setSuggestion(bestSuggestion), 0)
+
+      if (!enableMiniLM) return
+
       if (ghostEmbeddings.current.length === 0) return
 
       if (!fullText) {
@@ -151,30 +155,16 @@ export function useGhostLogic(activeVersionContent, removedSentenceIds = [], set
 
       // Step 3: Update ghost states
       setGhosts(prev => {
-        let maxSim = -1
-
-        // Find WORD suggestion candidate
-        let bestSuggestion = ''
-        if (enableIntellisense && fullText.trim().length >= 1 && activeVersionContent) {
-           bestSuggestion = getWordSuggestion(fullText, activeVersionContent)
-        }
-        
-        // Update suggestion state asynchronously to avoid React warnings
-        setTimeout(() => setSuggestion(bestSuggestion), 0)
-
-        let changed = false
         const nextGhosts = prev.map((ghost, i) => {
           const isRemoved = removedIdSetRef.current.has(ghost.id)
 
           if (ghost.covered) {
             if (ghost.removed === isRemoved) return ghost
-            changed = true
             return { ...ghost, removed: isRemoved }
           }
 
           if (newCovered.has(i)) {
             if (ghost.covered && ghost.removed === isRemoved && ghost.state === 'dim') return ghost
-            changed = true
             return { ...ghost, covered: true, removed: isRemoved, state: 'dim' }
           }
 
@@ -187,11 +177,10 @@ export function useGhostLogic(activeVersionContent, removedSentenceIds = [], set
 
           if (ghost.removed === isRemoved && ghost.state === state) return ghost
 
-          changed = true
           return { ...ghost, removed: isRemoved, state }
         })
 
-        return changed ? nextGhosts : prev
+        return nextGhosts
       })
     }, 300)
   }, [getTextEmbedding, enableMiniLM, enableIntellisense, activeVersionContent])
